@@ -5,7 +5,7 @@ import './App.css'; // Tu pourras styliser après
 
 const SOCKET_URL = import.meta.env.MODE === 'development' 
   ? "http://localhost:3001" 
-  : "https://moviematch-backend.onrender.com"; // On va créer cette adresse juste après !
+  : "https://moviematch-backend-0om3.onrender.com"; // On va créer cette adresse juste après !
 
 const socket = io.connect(SOCKET_URL);
 
