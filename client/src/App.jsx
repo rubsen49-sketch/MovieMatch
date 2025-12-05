@@ -19,6 +19,8 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [match, setMatch] = useState(null);
 
+  const [selectedGenre, setSelectedGenre] = useState("");
+
   // Écouter les matchs venant du serveur
   useEffect(() => {
     socket.on("match_found", (data) => {
@@ -36,18 +38,30 @@ function App() {
   };
 
   // 2. Récupérer les films populaires via l'API
+// 2. Récupérer les films (Version Intelligente : Genre + Historique)
   const fetchMovies = async () => {
+    // Choix de l'URL : Soit "Populaire", soit "Filtré par genre"
+    const endpoint = selectedGenre 
+      ? `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&language=fr-FR&page=1`
+      : `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=fr-FR&page=1`;
+
     try {
-      const response = await axios.get(
-        `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=fr-FR&page=1`
-      );
-      setMovies(response.data.results);
+      const response = await axios.get(endpoint);
+      
+      // -- GESTION HISTORIQUE --
+      // On récupère la liste des films déjà vus dans la mémoire du téléphone
+      const history = JSON.parse(localStorage.getItem('watchedMovies')) || [];
+      
+      // On ne garde que les films dont l'ID N'EST PAS dans l'historique
+      const newMovies = response.data.results.filter(movie => !history.includes(movie.id));
+      
+      setMovies(newMovies);
     } catch (error) {
       console.error("Erreur API:", error);
     }
   };
 
-  // 3. Gestion du Swipe (J'aime / J'aime pas)
+  // 3. Gestion du Swipe (Avec sauvegarde dans l'historique)
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
 
@@ -57,6 +71,14 @@ function App() {
         movieId: currentMovie.id,
         movieTitle: currentMovie.title
       });
+    }
+
+    // -- SAUVEGARDE --
+    // On ajoute ce film à la liste "déjà vu" pour ne plus jamais le proposer
+    const history = JSON.parse(localStorage.getItem('watchedMovies')) || [];
+    if (!history.includes(currentMovie.id)) {
+      history.push(currentMovie.id);
+      localStorage.setItem('watchedMovies', JSON.stringify(history));
     }
 
     // Passer au film suivant
@@ -79,19 +101,43 @@ function App() {
   }
 
   // Écran d'accueil (Rejoindre une salle)
+// Écran d'accueil (Rejoindre une salle)
   if (!isInRoom) {
     return (
       <div className="welcome-screen">
-        <h1>Movie Match</h1>
+        <h1>Movie Match 🍿</h1>
         <p>Trouvez un film à regarder ensemble.</p>
+        
         <div className="input-group">
           <input 
             type="text" 
-            placeholder="Code de la salle (ex: PIZZA)" 
+            placeholder="Code de la salle (ex: CINE)" 
             onChange={(event) => setRoom(event.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && joinRoom()}
           />
-          <button className="primary-btn" onClick={joinRoom}>Rejoindre la salle</button>
+
+          {/* 👇 LE SÉLECTEUR DE GENRE AJOUTÉ ICI 👇 */}
+          <select 
+            onChange={(e) => setSelectedGenre(e.target.value)}
+            style={{padding: '15px', borderRadius: '10px', border: 'none', background: '#333', color: 'white'}}
+          >
+            <option value="">🎲 Tous les genres (Aléatoire)</option>
+            <option value="28">💥 Action</option>
+            <option value="35">😂 Comédie</option>
+            <option value="27">👻 Horreur</option>
+            <option value="10749">💕 Romance</option>
+            <option value="878">👽 Science-Fiction</option>
+            <option value="16">🦁 Animation</option>
+          </select>
+
+          <button className="primary-btn" onClick={joinRoom}>Rejoindre</button>
+          
+          {/* Petit bouton caché pour vider l'historique si besoin */}
+          <button 
+            onClick={() => {localStorage.removeItem('watchedMovies'); alert('Historique effacé !');}}
+            style={{marginTop: '20px', background: 'transparent', border: '1px solid #555', color: '#555', padding: '5px', fontSize: '0.8rem'}}
+          >
+            🗑️ Reset Historique
+          </button>
         </div>
       </div>
     );
