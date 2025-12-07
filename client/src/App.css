@@ -289,3 +289,56 @@ button.primary-btn:active {
   cursor: grabbing;
   /* Curseur "main fermée" quand on attrape */
 }
+/* --- PAGE MES MATCHS --- */
+.matches-screen {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  /* Permet de scroller si tu as plein de matchs */
+  text-align: center;
+}
+
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* 2 colonnes */
+  gap: 15px;
+  margin-top: 20px;
+  padding-bottom: 50px;
+}
+
+.mini-card {
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.mini-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+.mini-card h3 {
+  font-size: 0.9rem;
+  margin: 10px;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Met "..." si le titre est trop long */
+}
+
+.btn-back {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  font-weight: bold;
+}
