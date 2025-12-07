@@ -1,179 +1,242 @@
-/* RESET & FONTS */
+/* RESET & GLOBAL */
 :root {
-  --bg-color: #141414;
-  --text-color: #ffffff;
+  --bg-app: #111111;
+  /* Fond de l'app (Noir profond) */
+  --bg-card: #1e1e1e;
+  /* Fond de la carte (Gris foncé) */
+  --text-main: #ffffff;
+  --text-sub: #a1a1a1;
   --primary: #e50914;
-  --green: #46d369;
-  --red: #f95f5f;
+  /* Rouge Netflix */
+  --green: #2ecc71;
+  /* Vert Like */
+  --red: #ff4757;
+  /* Rouge Pass */
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  padding: 0;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  /* Pas de scroll global */
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
-  overflow: hidden;
-  /* Empêche le scroll global */
 }
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
 }
 
-/* CONTAINER PRINCIPAL */
-.card-container {
-  position: relative;
-  width: 90%;
-  max-width: 380px;
-  /* Taille standard smartphone */
-  aspect-ratio: 2/3;
-  /* Ratio poster de cinéma */
-  border-radius: 20px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
+/* --- 1. ÉCRAN D'ACCUEIL --- */
+.welcome-screen {
+  text-align: center;
+  padding: 20px;
+  width: 100%;
+  max-width: 400px;
 }
 
-/* LA CARTE (Structure) */
-.movie-card {
+.welcome-screen h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin-bottom: 10px;
+  letter-spacing: -1px;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  background: var(--bg-card);
+  padding: 30px;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+}
+
+input,
+select {
+  width: 100%;
+  padding: 15px;
+  border-radius: 12px;
+  border: 1px solid #333;
+  background: #2a2a2a;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--primary);
+}
+
+button.primary-btn {
+  padding: 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--primary);
+  color: white;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+  transition: transform 0.1s;
+}
+
+button.primary-btn:active {
+  transform: scale(0.98);
+}
+
+/* --- 2. LA CARTE DU FILM (Design Robuste) --- */
+.card-container {
+  width: 90%;
+  max-width: 360px;
+  height: 650px;
+  /* Hauteur fixe pour éviter que ça saute */
   position: relative;
+  perspective: 1000px;
+}
+
+.movie-card {
   width: 100%;
   height: 100%;
-  border-radius: 20px;
+  background: var(--bg-card);
+  border-radius: 24px;
   overflow: hidden;
-  background: #222;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #333;
 }
 
-/* L'IMAGE (Prend tout l'espace) */
+/* L'IMAGE : Prend 70% de la hauteur */
 .movie-poster {
   width: 100%;
-  height: 100%;
+  height: 70%;
   object-fit: cover;
-  /* Zoom pour remplir sans déformer */
-  object-position: center top;
-  /* Focus sur le haut (visages) */
+  object-position: top center;
   display: block;
 }
 
-/* LE DÉGRADÉ (Pour lire le texte) */
-.movie-card::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60%;
-  /* Le dégradé monte sur 60% de l'image */
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0));
-  pointer-events: none;
-  /* Laisse passer les clics */
-}
-
-/* LES INFOS (Texte par dessus l'image) */
+/* LES INFOS : Prennent 30% restants */
 .movie-info {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
+  height: 30%;
   padding: 20px;
-  box-sizing: border-box;
-  z-index: 10;
-  /* Au dessus du dégradé */
-  text-align: left;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: linear-gradient(to bottom, var(--bg-card), #161616);
 }
 
-.movie-info h2 {
-  font-size: 1.8rem;
-  margin: 0 0 10px 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  /* Limite le titre à 2 lignes max */
+.text-content h2 {
+  font-size: 1.4rem;
+  margin: 0 0 8px 0;
+  line-height: 1.2;
+  /* Limite le titre à 2 lignes */
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
 .movie-desc {
-  font-size: 0.95rem;
-  color: #ddd;
-  margin-bottom: 20px;
-  line-height: 1.4;
-  /* Limite la description à 3 lignes max */
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin: 0;
+  /* Limite la description à 3 lignes */
   display: -webkit-box;
   -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  opacity: 0.9;
 }
 
-/* LES BOUTONS */
+/* LES BOUTONS (Alignés en bas) */
 .actions {
   display: flex;
   justify-content: center;
-  gap: 30px;
-  margin-bottom: 10px;
+  gap: 25px;
+  margin-top: 10px;
 }
 
 .btn-circle {
-  width: 65px;
-  height: 65px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   border: none;
-  font-size: 1.8rem;
+  font-size: 1.5rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: transform 0.2s, background 0.2s;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .btn-circle:hover {
-  transform: scale(1.15);
+  transform: scale(1.1);
 }
 
 .btn-pass {
-  background: white;
+  background: #2a2a2a;
   color: var(--red);
+  border: 2px solid rgba(255, 71, 87, 0.2);
 }
 
 .btn-like {
-  background: linear-gradient(45deg, var(--primary), #ff4b5c);
-  color: white;
+  background: #2a2a2a;
+  color: var(--green);
+  border: 2px solid rgba(46, 204, 113, 0.2);
 }
 
-/* ÉCRAN MATCH */
+/* --- 3. POPUP MATCH --- */
 .match-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.95);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
-  animation: popIn 0.3s;
+  z-index: 9999;
+  text-align: center;
+  animation: fadeIn 0.3s;
 }
 
 .match-title {
-  font-size: 3rem;
+  font-size: 3.5rem;
   color: var(--green);
+  font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 5px;
+  margin-bottom: 0;
+  text-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
 }
 
-/* ÉCRAN ACCUEIL */
-.welcome-screen input {
-  margin-bottom: 20px;
-  width: 80%;
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
