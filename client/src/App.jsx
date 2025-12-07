@@ -18,6 +18,7 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [match, setMatch] = useState(null);
   const [selectedGenre, setSelectedGenre] = useState("");
+  const [minRating, setMinRating] = useState(0);
   const [providers, setProviders] = useState([]);
 
   // Écouter les matchs
@@ -55,27 +56,25 @@ function App() {
 
   // Récupérer films
   // 2. Récupérer les films (FILTRÉS : Dispo en France uniquement)
+  // 2. Récupérer les films (Version ULTIME : Genre + Dispo FR + Anti-Navet)
   const fetchMovies = async () => {
-    // On récupère la date d'aujourd'hui pour ne pas afficher les films du futur
     const today = new Date().toISOString().split('T')[0];
 
-    // On construit l'URL de base avec "discover" (plus puissant que "popular")
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
     
-    // FILTRE 1 : Le genre (si sélectionné)
-    if (selectedGenre) {
-      endpoint += `&with_genres=${selectedGenre}`;
-    }
+    // Filtre Genre
+    if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
 
-    // FILTRE 2 : Uniquement ce qui est dispo en France (FR)
+    // Filtre Dispo France (Streaming/VOD)
     endpoint += `&watch_region=FR`;
-
-    // FILTRE 3 : Dispo en Streaming (flatrate), Location (rent) ou Achat (buy)
-    // Ça élimine les films "Cinéma uniquement" ou "Pas encore sortis"
     endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
-
-    // FILTRE 4 : Date de sortie doit être AVANT aujourd'hui (Sécurité supplémentaire)
     endpoint += `&primary_release_date.lte=${today}`;
+
+    // 👇 LE FILTRE ANTI-NAVETS 👇
+    if (minRating > 0) {
+      endpoint += `&vote_average.gte=${minRating}`; // Note supérieure à X
+      endpoint += `&vote_count.gte=300`; // Au moins 300 votes (pour la fiabilité)
+    }
 
     try {
       const response = await axios.get(endpoint);
@@ -126,17 +125,46 @@ function App() {
       <div className="welcome-screen">
         <h1>Movie Match 🍿</h1>
         <div className="input-group">
-          <input type="text" placeholder="Code (ex: CINE)" onChange={(e) => setRoom(e.target.value)} />
-          <select onChange={(e) => setSelectedGenre(e.target.value)} style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none'}}>
+          <input 
+            type="text" 
+            placeholder="Code de la salle (ex: CINE)" 
+            onChange={(event) => setRoom(event.target.value)}
+          />
+          
+          {/* SÉLECTEUR DE GENRE */}
+          <select 
+            onChange={(e) => setSelectedGenre(e.target.value)}
+            style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none'}}
+          >
             <option value="">🎲 Tous les genres</option>
             <option value="28">💥 Action</option>
             <option value="35">😂 Comédie</option>
             <option value="27">👻 Horreur</option>
             <option value="10749">💕 Romance</option>
+            <option value="878">👽 Science-Fiction</option>
             <option value="16">🦁 Animation</option>
           </select>
+
+          {/* 👇 SÉLECTEUR ANTI-NAVET (NOUVEAU) 👇 */}
+          <select 
+            onChange={(e) => setMinRating(e.target.value)}
+            style={{padding: '15px', borderRadius: '10px', background: '#222', color: '#ffd700', border: 'none', fontWeight: 'bold'}}
+          >
+            <option value="0">🍿 Qualité : Peu importe</option>
+            <option value="6">⭐ 6/10 (Correct)</option>
+            <option value="7">⭐⭐ 7/10 (Bon film)</option>
+            <option value="7.5">⭐⭐⭐ 7.5/10 (Très bon)</option>
+            <option value="8">💎 8/10 (Chef d'oeuvre)</option>
+          </select>
+
           <button className="primary-btn" onClick={joinRoom}>Rejoindre</button>
-          <button onClick={() => {localStorage.removeItem('watchedMovies'); alert('Reset !');}} style={{marginTop: '10px', background: 'transparent', border: 'none', color: '#555'}}>🗑️ Reset</button>
+          
+          <button 
+            onClick={() => {localStorage.removeItem('watchedMovies'); alert('Historique effacé !');}}
+            style={{marginTop: '10px', background: 'transparent', border: 'none', color: '#555'}}
+          >
+            🗑️ Reset Historique
+          </button>
         </div>
       </div>
     );
