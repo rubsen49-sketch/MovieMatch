@@ -197,16 +197,16 @@ function App() {
         {view === "menu" && (
           <div className="menu-buttons">
             <button className="big-btn btn-create" onClick={generateRoomCode}>
-              ✨ Créer une salle
+              Créer une salle
             </button>
             <button className="big-btn btn-join" onClick={() => setView("join")}>
-              🚀 Rejoindre
+              Rejoindre
             </button>
             <button 
               onClick={() => setShowMyMatches(true)}
               style={{marginTop: '20px', background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline', cursor: 'pointer'}}
             >
-              Voir mes trophées 🏆
+              Voir mes matchs
             </button>
           </div>
         )}
