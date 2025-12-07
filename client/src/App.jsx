@@ -16,13 +16,12 @@ const MatchItem = ({ movieId }) => {
   const [movieData, setMovieData] = useState(null);
 
   useEffect(() => {
-    // On récupère les infos du film (Image + Titre)
     axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
       .then(res => setMovieData(res.data))
       .catch(err => console.error(err));
   }, [movieId]);
 
-  if (!movieData) return <div className="mini-card">Chargement...</div>;
+  if (!movieData) return <div className="mini-card">...</div>;
 
   return (
     <div className="mini-card">
@@ -41,20 +40,53 @@ function App() {
   const [selectedGenre, setSelectedGenre] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [providers, setProviders] = useState([]);
+  const [page, setPage] = useState(1);
   
-  // NOUVEAU : État pour afficher la page "Mes Matchs"
+  // État pour afficher la page "Mes Matchs"
   const [showMyMatches, setShowMyMatches] = useState(false);
+  
+  // Charge les trophées au démarrage (Lazy init pour éviter l'erreur React)
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // Écouter les matchs (Et les sauvegarder !)
+  // --- FONCTION FETCH MOVIES (DÉPLACÉE ICI POUR ÉVITER L'ERREUR) ---
+  const fetchMovies = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+    
+    if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
+    endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate|rent|buy&primary_release_date.lte=${today}`;
+    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+
+    try {
+      const response = await axios.get(endpoint);
+      
+      // FILTRE : On utilise SEULEMENT les trophées (savedMatches)
+      const trophies = JSON.parse(localStorage.getItem('myMatches')) || [];
+      
+      // On cache le film SI il est déjà dans les trophées (matché)
+      // Les films swipés non-matchés restent visibles pour plus tard
+      const newMovies = response.data.results.filter(movie => !trophies.includes(movie.id));
+      
+      // Si la page est vide (car on a tout matché), on passe à la suivante
+      if (newMovies.length === 0 && page < 500) {
+        setPage(prev => prev + 1);
+      } else {
+        setMovies(newMovies);
+        setCurrentIndex(0); 
+      }
+    } catch (error) {
+      console.error("Erreur API:", error);
+    }
+  };
+
+  // --- Écouter les matchs ---
   useEffect(() => {
     socket.on("match_found", (data) => {
       setMatch(data);
       
-      // SAUVEGARDE DU MATCH
       const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
       // On évite les doublons
       if (!currentMatches.includes(data.movieId)) {
@@ -65,7 +97,7 @@ function App() {
     });
   }, []);
 
-  // Charger les plateformes de streaming
+  // --- Charger les plateformes ---
   useEffect(() => {
     if (movies.length > 0 && currentIndex < movies.length) {
       const currentMovie = movies[currentIndex];
@@ -79,30 +111,38 @@ function App() {
     }
   }, [currentIndex, movies]);
 
+  // --- Logique Infini ---
+  // 1. Si on arrive à la fin de la liste, on passe à la page suivante
+  useEffect(() => {
+    if (isInRoom && movies.length > 0 && currentIndex >= movies.length) {
+      setPage(prev => prev + 1);
+    }
+  }, [currentIndex, movies.length, isInRoom]);
+
+  // 2. Quand le numéro de page change, on appelle l'API
+  useEffect(() => {
+    if (isInRoom) {
+      fetchMovies();
+    }
+  }, [page, isInRoom]);
+
   const joinRoom = () => {
     if (room !== "") {
       socket.emit("join_room", room);
       setIsInRoom(true);
-      fetchMovies();
+      setPage(1); // On force le retour page 1
+      setMovies([]); 
+      setCurrentIndex(0);
+      // fetchMovies sera appelé par le useEffect [page]
     }
   };
 
-  const fetchMovies = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
-    
-    if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
-    endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate|rent|buy&primary_release_date.lte=${today}`;
-    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
-
-    try {
-      const response = await axios.get(endpoint);
-      const history = JSON.parse(localStorage.getItem('watchedMovies')) || [];
-      const newMovies = response.data.results.filter(movie => !history.includes(movie.id));
-      setMovies(newMovies);
-    } catch (error) {
-      console.error("Erreur API:", error);
-    }
+  const leaveRoom = () => {
+    setIsInRoom(false);
+    setMovies([]);
+    setCurrentIndex(0);
+    setPage(1);
+    setRoom("");
   };
 
   const handleSwipe = (direction) => {
@@ -110,11 +150,7 @@ function App() {
     if (direction === "right") {
       socket.emit("swipe_right", { room, movieId: currentMovie.id, movieTitle: currentMovie.title });
     }
-    const history = JSON.parse(localStorage.getItem('watchedMovies')) || [];
-    if (!history.includes(currentMovie.id)) {
-      history.push(currentMovie.id);
-      localStorage.setItem('watchedMovies', JSON.stringify(history));
-    }
+    // Pas de sauvegarde dans l'historique "vu" (tu veux pouvoir revoir les non-matchés)
     setCurrentIndex((prev) => prev + 1);
   };
 
@@ -132,20 +168,15 @@ function App() {
     return (
       <div className="matches-screen">
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>⬅ Retour</button>
-        <h1>🏆 Mes Trophées</h1>
+        <h2>🏆 Mes Trophées</h2>
         <div className="matches-grid">
           {savedMatches.length === 0 ? (
-            <p>Pas encore de match... Au boulot !</p>
+            <p>Pas encore de match...</p>
           ) : (
             savedMatches.map(id => <MatchItem key={id} movieId={id} />)
           )}
         </div>
-        <button 
-          onClick={() => {localStorage.removeItem('myMatches'); setSavedMatches([]);}}
-          style={{background: 'transparent', border: '1px solid #555', color: '#888', padding: '10px', marginTop: '30px'}}
-        >
-          🗑️ Vider la liste
-        </button>
+        {/* Bouton vider supprimé comme demandé */}
       </div>
     );
   }
@@ -178,7 +209,7 @@ function App() {
             <option value="16">🦁 Animation</option>
           </select>
 
-          <select onChange={(e) => setMinRating(e.target.value)} style={{padding: '15px', borderRadius: '10px', background: '#222', color: '#ffd700', border: 'none', fontWeight: 'bold'}}>
+          <select onChange={(e) => setMinRating(e.target.value)} style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none', fontWeight: 'bold'}}>
             <option value="0">🍿 Qualité : Peu importe</option>
             <option value="7">⭐⭐ 7/10 (Bon film)</option>
             <option value="8">💎 8/10 (Pépite)</option>
@@ -186,23 +217,21 @@ function App() {
 
           <button className="primary-btn" onClick={joinRoom}>Rejoindre</button>
           
-          {/* BOUTON POUR VOIR MES MATCHS */}
           <button 
             onClick={() => setShowMyMatches(true)}
             style={{marginTop: '15px', background: '#333', border: 'none', color: 'white', padding: '15px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold'}}
           >
             🏆 Voir mes Matchs ({savedMatches.length})
           </button>
-
-          <button onClick={() => {localStorage.removeItem('watchedMovies'); alert('Reset !');}} style={{marginTop: '10px', background: 'transparent', border: 'none', color: '#555'}}>🗑️ Reset Historique</button>
+          {/* Bouton reset supprimé comme demandé */}
         </div>
       </div>
     );
   }
 
-  // --- ECRAN : PLUS DE FILMS ---
+  // --- ECRAN : CHARGEMENT ---
   if (currentIndex >= movies.length) {
-    return <div className="welcome-screen"><h1>Plus de films !</h1></div>;
+    return <div className="welcome-screen"><h2>Chargement de la suite...</h2></div>;
   }
 
   const movie = movies[currentIndex];
@@ -210,6 +239,7 @@ function App() {
   // --- ECRAN : CARTE FILM ---
   return (
     <div className="card-container">
+      <button className="btn-quit" onClick={leaveRoom}>⬅ Quitter</button>
       <motion.div 
         className="movie-card"
         drag="x"
