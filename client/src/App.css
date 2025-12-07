@@ -258,3 +258,22 @@ button.primary-btn:active {
     transform: scale(1);
   }
 }
+/* --- LOGOS STREAMING --- */
+.providers-container {
+  display: flex;
+  gap: 10px;
+  /* Espace entre les logos */
+  margin-bottom: 10px;
+  /* Espace avant le titre */
+  height: 35px;
+  /* Hauteur fixe pour ne pas faire sauter le texte */
+  align-items: center;
+}
+
+.provider-logo {
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  /* Coins arrondis comme sur iOS */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}

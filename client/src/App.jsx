@@ -20,6 +20,7 @@ function App() {
   const [match, setMatch] = useState(null);
 
   const [selectedGenre, setSelectedGenre] = useState("");
+  const [providers, setProviders] = useState([]); // Stocke les logos (Netflix, etc.)
 
   // Écouter les matchs venant du serveur
   useEffect(() => {
@@ -60,6 +61,25 @@ function App() {
       console.error("Erreur API:", error);
     }
   };
+  // --- NOUVEAU : CHARGER LES PLATEFORMES DE STREAMING ---
+useEffect(() => {
+  if (movies.length > 0 && currentIndex < movies.length) {
+    const currentMovie = movies[currentIndex];
+
+    // On demande les providers pour la France (FR)
+    axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
+      .then(response => {
+        const frData = response.data.results.FR;
+        // On cherche "flatrate" (Streaming par abonnement)
+        if (frData && frData.flatrate) {
+          setProviders(frData.flatrate);
+        } else {
+          setProviders([]); // Rien trouvé
+        }
+      })
+      .catch(err => console.error(err));
+  }
+}, [currentIndex, movies]); // Se déclenche quand on change de film
 
   // 3. Gestion du Swipe (Avec sauvegarde dans l'historique)
   const handleSwipe = (direction) => {
@@ -163,8 +183,24 @@ function App() {
           src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
           alt={movie.title} 
         />
+        {/* INFO EN BAS */}
         <div className="movie-info">
-          <div>
+          <div className="text-content">
+            
+            {/* 👇 AJOUTE CE BLOC ICI 👇 */}
+            <div className="providers-container">
+              {providers.map((provider) => (
+                <img 
+                  key={provider.provider_id}
+                  src={`https://image.tmdb.org/t/p/original${provider.logo_path}`} 
+                  alt={provider.provider_name}
+                  className="provider-logo"
+                  title={provider.provider_name} // Affiche le nom au survol
+                />
+              ))}
+            </div>
+            {/* 👆 FIN DU BLOC 👆 */}
+
             <h2>{movie.title}</h2>
             <p className="movie-desc">{movie.overview}</p>
           </div>
