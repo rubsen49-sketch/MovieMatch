@@ -103,12 +103,12 @@ button.primary-btn:active {
   transform: scale(0.98);
 }
 
-/* --- 2. LA CARTE DU FILM (Design Robuste) --- */
+/* 2. LA CARTE DU FILM (Version Flexbox Intelligent) */
 .card-container {
   width: 90%;
   max-width: 360px;
   height: 650px;
-  /* Hauteur fixe pour éviter que ça saute */
+  /* Hauteur totale fixe */
   position: relative;
   perspective: 1000px;
 }
@@ -120,35 +120,50 @@ button.primary-btn:active {
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border: 1px solid #333;
+
+  /* C'est ici que la magie opère 👇 */
   display: flex;
   flex-direction: column;
-  border: 1px solid #333;
 }
 
-/* L'IMAGE : Prend 70% de la hauteur */
+/* L'IMAGE : Prend tout l'espace DISPONIBLE */
 .movie-poster {
   width: 100%;
-  height: 70%;
+  flex-grow: 1;
+  /* L'image grandit pour remplir le vide */
+  flex-shrink: 1;
+  /* L'image accepte de rétrécir si le texte prend de la place */
+  min-height: 0;
+  /* Indispensable pour que le rétrécissement marche */
   object-fit: cover;
   object-position: top center;
   display: block;
 }
 
-/* LES INFOS : Prennent 30% restants */
+/* LES INFOS : Prennent juste la place nécessaire */
 .movie-info {
-  height: 30%;
+  flex-shrink: 0;
+  /* Interdit d'écraser le texte, il reste prioritaire */
   padding: 20px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
+  /* Colle le contenu vers le bas */
   background: linear-gradient(to bottom, var(--bg-card), #161616);
+
+  /* Optionnel : Une petite ombre portée vers le haut pour séparer de l'image */
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.2);
 }
 
 .text-content h2 {
   font-size: 1.4rem;
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
+  /* Un peu plus d'espace */
   line-height: 1.2;
-  /* Limite le titre à 2 lignes */
+  color: white;
+
+  /* Sécurité Titre */
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -159,8 +174,10 @@ button.primary-btn:active {
 .movie-desc {
   font-size: 0.9rem;
   color: var(--text-sub);
-  margin: 0;
-  /* Limite la description à 3 lignes */
+  margin: 0 0 15px 0;
+  /* Marge avant les boutons */
+
+  /* Sécurité Description */
   display: -webkit-box;
   -webkit-line-clamp: 3;
   line-clamp: 3;
@@ -168,12 +185,13 @@ button.primary-btn:active {
   overflow: hidden;
 }
 
-/* LES BOUTONS (Alignés en bas) */
+/* LES BOUTONS (Restent fixes) */
 .actions {
   display: flex;
   justify-content: center;
   gap: 25px;
-  margin-top: 10px;
+  padding-top: 5px;
+  /* Petit espace de respiration */
 }
 
 .btn-circle {
