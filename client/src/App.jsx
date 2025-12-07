@@ -42,16 +42,27 @@ function App() {
   const [providers, setProviders] = useState([]);
   const [page, setPage] = useState(1);
   
-  // État pour afficher la page "Mes Matchs"
+  // NOUVEAU : Gère quelle vue afficher (menu, create, join)
+  const [view, setView] = useState("menu"); 
+
   const [showMyMatches, setShowMyMatches] = useState(false);
   
-  // Charge les trophées au démarrage (Lazy init pour éviter l'erreur React)
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // --- FONCTION FETCH MOVIES (DÉPLACÉE ICI POUR ÉVITER L'ERREUR) ---
+  // --- GÉNÉRATEUR DE CODE ALÉATOIRE ---
+  const generateRoomCode = () => {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let result = "";
+    for (let i = 0; i < 6; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setRoom(result);
+    setView("create"); // On passe à l'écran de paramétrage
+  };
+
   const fetchMovies = async () => {
     const today = new Date().toISOString().split('T')[0];
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
@@ -62,15 +73,9 @@ function App() {
 
     try {
       const response = await axios.get(endpoint);
-      
-      // FILTRE : On utilise SEULEMENT les trophées (savedMatches)
       const trophies = JSON.parse(localStorage.getItem('myMatches')) || [];
-      
-      // On cache le film SI il est déjà dans les trophées (matché)
-      // Les films swipés non-matchés restent visibles pour plus tard
       const newMovies = response.data.results.filter(movie => !trophies.includes(movie.id));
       
-      // Si la page est vide (car on a tout matché), on passe à la suivante
       if (newMovies.length === 0 && page < 500) {
         setPage(prev => prev + 1);
       } else {
@@ -82,13 +87,10 @@ function App() {
     }
   };
 
-  // --- Écouter les matchs ---
   useEffect(() => {
     socket.on("match_found", (data) => {
       setMatch(data);
-      
       const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
-      // On évite les doublons
       if (!currentMatches.includes(data.movieId)) {
         const newMatches = [data.movieId, ...currentMatches];
         localStorage.setItem('myMatches', JSON.stringify(newMatches));
@@ -97,7 +99,6 @@ function App() {
     });
   }, []);
 
-  // --- Charger les plateformes ---
   useEffect(() => {
     if (movies.length > 0 && currentIndex < movies.length) {
       const currentMovie = movies[currentIndex];
@@ -111,15 +112,12 @@ function App() {
     }
   }, [currentIndex, movies]);
 
-  // --- Logique Infini ---
-  // 1. Si on arrive à la fin de la liste, on passe à la page suivante
   useEffect(() => {
     if (isInRoom && movies.length > 0 && currentIndex >= movies.length) {
       setPage(prev => prev + 1);
     }
   }, [currentIndex, movies.length, isInRoom]);
 
-  // 2. Quand le numéro de page change, on appelle l'API
   useEffect(() => {
     if (isInRoom) {
       fetchMovies();
@@ -130,10 +128,9 @@ function App() {
     if (room !== "") {
       socket.emit("join_room", room);
       setIsInRoom(true);
-      setPage(1); // On force le retour page 1
+      setPage(1); 
       setMovies([]); 
       setCurrentIndex(0);
-      // fetchMovies sera appelé par le useEffect [page]
     }
   };
 
@@ -143,6 +140,7 @@ function App() {
     setCurrentIndex(0);
     setPage(1);
     setRoom("");
+    setView("menu"); // Retour au menu principal
   };
 
   const handleSwipe = (direction) => {
@@ -150,11 +148,9 @@ function App() {
     if (direction === "right") {
       socket.emit("swipe_right", { room, movieId: currentMovie.id, movieTitle: currentMovie.title });
     }
-    // Pas de sauvegarde dans l'historique "vu" (tu veux pouvoir revoir les non-matchés)
     setCurrentIndex((prev) => prev + 1);
   };
 
-  // Animation
   const x = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-30, 30]);
   const opacity = useTransform(x, [-150, 0, 150], [0.5, 1, 0.5]);
@@ -176,7 +172,6 @@ function App() {
             savedMatches.map(id => <MatchItem key={id} movieId={id} />)
           )}
         </div>
-        {/* Bouton vider supprimé comme demandé */}
       </div>
     );
   }
@@ -192,39 +187,74 @@ function App() {
     );
   }
 
-  // --- ECRAN : ACCUEIL ---
+  // --- ECRAN : ACCUEIL (Gère les 3 vues) ---
   if (!isInRoom) {
     return (
       <div className="welcome-screen">
         <h1>Movie Match 🍿</h1>
-        <div className="input-group">
-          <input type="text" placeholder="Code (ex: CINE)" onChange={(e) => setRoom(e.target.value)} />
-          
-          <select onChange={(e) => setSelectedGenre(e.target.value)} style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none'}}>
-            <option value="">🎲 Tous les genres</option>
-            <option value="28">💥 Action</option>
-            <option value="35">😂 Comédie</option>
-            <option value="27">👻 Horreur</option>
-            <option value="10749">💕 Romance</option>
-            <option value="16">🦁 Animation</option>
-          </select>
 
-          <select onChange={(e) => setMinRating(e.target.value)} style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none', fontWeight: 'bold'}}>
-            <option value="0">🍿 Qualité : Peu importe</option>
-            <option value="7">⭐⭐ 7/10 (Bon film)</option>
-            <option value="8">💎 8/10 (Pépite)</option>
-          </select>
+        {/* VUE 1 : MENU PRINCIPAL */}
+        {view === "menu" && (
+          <div className="menu-buttons">
+            <button className="big-btn btn-create" onClick={generateRoomCode}>
+              ✨ Créer une salle
+            </button>
+            <button className="big-btn btn-join" onClick={() => setView("join")}>
+              🚀 Rejoindre
+            </button>
+            <button 
+              onClick={() => setShowMyMatches(true)}
+              style={{marginTop: '20px', background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline', cursor: 'pointer'}}
+            >
+              Voir mes trophées 🏆
+            </button>
+          </div>
+        )}
 
-          <button className="primary-btn" onClick={joinRoom}>Rejoindre</button>
-          
-          <button 
-            onClick={() => setShowMyMatches(true)}
-            style={{marginTop: '15px', background: '#333', border: 'none', color: 'white', padding: '15px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold'}}
-          >
-            🏆 Voir mes Matchs ({savedMatches.length})
-          </button>
-          {/* Bouton reset supprimé comme demandé */}
-        </div>
+        {/* VUE 2 : REJOINDRE (Juste le code) */}
+        {view === "join" && (
+          <div className="input-group">
+            <input 
+              type="text" 
+              placeholder="Entrez le code..." 
+              onChange={(e) => setRoom(e.target.value.toUpperCase())}
+            />
+            <button className="primary-btn" onClick={joinRoom}>Valider</button>
+            <button className="btn-back" style={{marginTop: '10px'}} onClick={() => setView("menu")}>Annuler</button>
+          </div>
+        )}
+
+        {/* VUE 3 : CRÉER (Code + Paramètres) */}
+        {view === "create" && (
+          <div className="input-group">
+            <p style={{marginBottom: '5px', color: '#aaa'}}>Voici le code de votre salle :</p>
+            <div className="room-code-display">
+              <h2 className="code-text">{room}</h2>
+            </div>
+            
+            <div className="room-settings">
+              <label>🎬 Genre de film :</label>
+              <select onChange={(e) => setSelectedGenre(e.target.value)}>
+                <option value="">🎲 Tous les genres</option>
+                <option value="28">💥 Action</option>
+                <option value="35">😂 Comédie</option>
+                <option value="27">👻 Horreur</option>
+                <option value="10749">💕 Romance</option>
+                <option value="16">🦁 Animation</option>
+              </select>
+
+              <label>⭐ Qualité minimum :</label>
+              <select onChange={(e) => setMinRating(e.target.value)}>
+                <option value="0">🍿 Peu importe</option>
+                <option value="7">⭐⭐ 7/10 (Bon)</option>
+                <option value="8">💎 8/10 (Excellent)</option>
+              </select>
+            </div>
+
+            <button className="primary-btn" style={{marginTop: '20px'}} onClick={joinRoom}>Lancer la session !</button>
+            <button className="btn-back" style={{marginTop: '10px'}} onClick={() => setView("menu")}>Annuler</button>
+          </div>
+        )}
       </div>
     );
   }

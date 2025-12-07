@@ -363,3 +363,72 @@ button.primary-btn:active {
   background: var(--primary);
   border-color: var(--primary);
 }
+/* --- NOUVEAU MENU D'ACCUEIL --- */
+.menu-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.big-btn {
+  padding: 25px;
+  border-radius: 15px;
+  border: none;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.big-btn:hover {
+  transform: scale(1.02);
+}
+
+.btn-create {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 5px 20px rgba(229, 9, 20, 0.4);
+}
+
+.btn-join {
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+}
+
+/* --- ÉCRAN CRÉATION (Le Code) --- */
+.room-code-display {
+  background: #222;
+  border: 2px dashed #555;
+  padding: 20px;
+  border-radius: 15px;
+  margin: 20px 0;
+}
+
+.code-text {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--green);
+  letter-spacing: 5px;
+  margin: 0;
+  font-family: monospace;
+  /* Pour que ça fasse "Code" */
+}
+
+.room-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  text-align: left;
+}
+
+.room-settings label {
+  color: var(--text-sub);
+  font-size: 0.9rem;
+  margin-left: 5px;
+}
