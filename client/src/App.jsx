@@ -54,10 +54,28 @@ function App() {
   };
 
   // Récupérer films
+  // 2. Récupérer les films (FILTRÉS : Dispo en France uniquement)
   const fetchMovies = async () => {
-    const endpoint = selectedGenre 
-      ? `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&with_genres=${selectedGenre}&language=fr-FR&page=1`
-      : `https://api.themoviedb.org/3/movie/popular?api_key=${API_KEY}&language=fr-FR&page=1`;
+    // On récupère la date d'aujourd'hui pour ne pas afficher les films du futur
+    const today = new Date().toISOString().split('T')[0];
+
+    // On construit l'URL de base avec "discover" (plus puissant que "popular")
+    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=1`;
+    
+    // FILTRE 1 : Le genre (si sélectionné)
+    if (selectedGenre) {
+      endpoint += `&with_genres=${selectedGenre}`;
+    }
+
+    // FILTRE 2 : Uniquement ce qui est dispo en France (FR)
+    endpoint += `&watch_region=FR`;
+
+    // FILTRE 3 : Dispo en Streaming (flatrate), Location (rent) ou Achat (buy)
+    // Ça élimine les films "Cinéma uniquement" ou "Pas encore sortis"
+    endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
+
+    // FILTRE 4 : Date de sortie doit être AVANT aujourd'hui (Sécurité supplémentaire)
+    endpoint += `&primary_release_date.lte=${today}`;
 
     try {
       const response = await axios.get(endpoint);
