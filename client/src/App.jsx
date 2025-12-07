@@ -148,7 +148,7 @@ function App() {
           {/* 👇 SÉLECTEUR ANTI-NAVET (NOUVEAU) 👇 */}
           <select 
             onChange={(e) => setMinRating(e.target.value)}
-            style={{padding: '15px', borderRadius: '10px', background: '#222', color: '#ffd700', border: 'none', fontWeight: 'bold'}}
+            style={{padding: '15px', borderRadius: '10px', background: '#333', color: 'white', border: 'none', fontWeight: 'bold'}}
           >
             <option value="0">🍿 Qualité : Peu importe</option>
             <option value="6">⭐ 6/10 (Correct)</option>
