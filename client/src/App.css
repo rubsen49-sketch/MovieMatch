@@ -277,3 +277,15 @@ button.primary-btn:active {
   /* Coins arrondis comme sur iOS */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
 }
+
+/* Empêche de sélectionner le texte quand on swipe */
+.movie-card {
+  user-select: none;
+  cursor: grab;
+  /* Curseur "main ouverte" */
+}
+
+.movie-card:active {
+  cursor: grabbing;
+  /* Curseur "main fermée" quand on attrape */
+}
