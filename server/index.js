@@ -9,114 +9,124 @@ app.use(cors());
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: {
-    origin: "*", 
-    methods: ["GET", "POST"],
-  },
+  cors: { origin: "*", methods: ["GET", "POST"] },
 });
 
-// Mémoire des likes
-const roomLikes = {};
+// Mémoire : { "CODE": { likes: { ID_FILM: Set(userIds) }, settings: {}, hostId: "..." } }
+const roomsData = {};
 
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  // 1. CRÉATION DE SALLE
+  // 1. CRÉATION
   socket.on("create_room", (room) => {
     try {
       socket.join(room);
-      roomLikes[room] = {}; 
+      roomsData[room] = {
+        likes: {},
+        settings: { 
+          providers: [], 
+          voteMode: 'majority' // 'majority' ou 'unanimity'
+        },
+        hostId: socket.id
+      };
       console.log(`Room created: ${room}`);
       io.to(room).emit("player_count_update", 1);
     } catch (error) {
-      console.error("Erreur create_room:", error);
+      console.error("Erreur create:", error);
     }
   });
 
-  // 2. REJOINDRE UNE SALLE
+  // 2. REJOINDRE
   socket.on("join_room", (room, callback) => {
     try {
       const roomExists = io.sockets.adapter.rooms.has(room);
-
-      if (roomExists) {
+      if (roomExists && roomsData[room]) {
         socket.join(room);
         const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
         io.to(room).emit("player_count_update", roomSize);
+        // On envoie les réglages actuels au nouvel arrivant
+        socket.emit("settings_update", roomsData[room].settings);
         if (callback) callback({ status: "ok" });
       } else {
         if (callback) callback({ status: "error", message: "Salle introuvable" });
       }
     } catch (error) {
-      console.error("Erreur join_room:", error);
+      console.error("Erreur join:", error);
     }
   });
 
-  // 3. SYNCHRO RÉGLAGES
+  // 3. MISE À JOUR RÉGLAGES (Host seulement)
   socket.on("update_settings", (data) => {
     try {
-      if (data && data.room) {
-        socket.to(data.room).emit("settings_update", data);
+      if (roomsData[data.room]) {
+        // On fusionne les nouveaux réglages
+        roomsData[data.room].settings = { 
+          ...roomsData[data.room].settings, 
+          ...data.settings 
+        };
+        // On prévient tout le monde (sauf l'émetteur qui sait déjà)
+        socket.to(data.room).emit("settings_update", roomsData[data.room].settings);
       }
     } catch (error) {
-      console.error("Erreur update_settings:", error);
+      console.error("Erreur settings:", error);
     }
   });
 
-  // 4. LANCEMENT JEU
   socket.on("start_game", (room) => {
-    try {
-      io.to(room).emit("game_started");
-    } catch (error) {
-      console.error("Erreur start_game:", error);
-    }
+    io.to(room).emit("game_started");
   });
 
-  // 5. GESTION DES SWIPES (LA CORRECTION CRITIQUE EST ICI)
+  // 4. SWIPE INTELLIGENT (Cœur du système)
   socket.on("swipe_right", (data) => {
     try {
-      // Sécurité : Si les données sont incomplètes, on arrête tout de suite
-      if (!data || !data.room || !data.movieId) return;
-
       const { room, movieId, userId } = data;
+      if (!roomsData[room]) return;
 
-      // Initialisation sécurisée
-      if (!roomLikes[room]) {
-        roomLikes[room] = {};
-      }
-      if (!roomLikes[room][movieId]) {
-        roomLikes[room][movieId] = new Set();
+      if (!roomsData[room].likes[movieId]) {
+        roomsData[room].likes[movieId] = new Set();
       }
 
-      // On utilise l'ID unique (userId) s'il existe, sinon le socket.id
       const idToUse = userId || socket.id;
+      roomsData[room].likes[movieId].add(idToUse);
 
-      // On ajoute le like
-      roomLikes[room][movieId].add(idToUse);
+      // CALCUL DU SEUIL DE VICTOIRE
+      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 1;
+      const votes = roomsData[room].likes[movieId].size;
+      const mode = roomsData[room].settings.voteMode;
+      
+      let isMatch = false;
 
-      // LOGIQUE DE MATCH
-      if (roomLikes[room][movieId].size >= 2) {
+      if (mode === 'unanimity') {
+        isMatch = votes >= roomSize;
+      } else {
+        // Majorité (50% + 1)
+        // Ex: 2 joueurs -> faut 2 votes. 3 joueurs -> faut 2 votes. 4 joueurs -> faut 3 votes.
+        const threshold = Math.floor(roomSize / 2) + 1;
+        isMatch = votes >= threshold;
+      }
+
+      if (isMatch) {
         io.to(room).emit("match_found", data);
       }
     } catch (error) {
-      // Si une erreur arrive ici, le serveur l'affiche mais NE CRASH PLUS
-      console.error("Erreur swipe_right (CRASH EVITÉ):", error);
+      console.error("Erreur swipe:", error);
     }
   });
-  
-  // 6. DÉCONNEXION
+
   socket.on("disconnecting", () => {
     try {
       const rooms = socket.rooms;
       rooms.forEach((room) => {
         const roomSize = io.sockets.adapter.rooms.get(room)?.size || 1;
         io.to(room).emit("player_count_update", roomSize - 1);
+        
+        // TODO (Phase 3): Gestion de la migration d'hôte ici
       });
     } catch (error) {
-      console.error("Erreur deconnexion:", error);
+      console.error("Erreur disconnect:", error);
     }
   });
 });
 
-server.listen(3001, () => {
-  console.log("SERVER IS RUNNING");
-});
+server.listen(3001, () => console.log("SERVER RUNNING"));

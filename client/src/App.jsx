@@ -12,7 +12,14 @@ const SOCKET_URL = import.meta.env.MODE === 'development'
 const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
-// Fonction utilitaire pour générer ou récupérer un ID unique par appareil
+// Liste des IDs des plateformes (TMDB IDs pour la France)
+const PLATFORMS = [
+  { id: 8, name: "Netflix", logo: "https://image.tmdb.org/t/p/original/t2yyOv40HZeVdHjatsN81q2kqyn.jpg" },
+  { id: 337, name: "Disney+", logo: "https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg" },
+  { id: 119, name: "Amazon Prime", logo: "https://image.tmdb.org/t/p/original/emthp39XA2YScoU8t5t7TB38rWO.jpg" },
+  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/69exmF93d4W866n76hT23555k3.jpg" }
+];
+
 const getUserId = () => {
   let id = localStorage.getItem('userId');
   if (!id) {
@@ -46,37 +53,33 @@ function App() {
   const [movies, setMovies] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [match, setMatch] = useState(null);
-  const [selectedGenre, setSelectedGenre] = useState("");
-  const [minRating, setMinRating] = useState(0);
-  const [providers, setProviders] = useState([]);
   const [page, setPage] = useState(1);
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
   
+  // --- NOUVEAUX REGLAGES ---
+  const [selectedGenre, setSelectedGenre] = useState("");
+  const [minRating, setMinRating] = useState(0);
+  const [selectedProviders, setSelectedProviders] = useState([]); // Tableau d'IDs
+  const [voteMode, setVoteMode] = useState('majority'); // 'majority' ou 'unanimity'
+
+  const [providersDisplay, setProvidersDisplay] = useState([]); // Pour l'affichage sur la carte
+  
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
-  const userId = useRef(getUserId()).current; // ID unique stable
+  const userId = useRef(getUserId()).current;
 
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
-  // --- FONCTIONS LOGIQUES ---
-
-  // Refonte de la fonction rejoindre pour accepter un argument optionnel
-  // Fonction intelligente pour rejoindre
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
-    
     if (targetRoom !== "") {
-      // --- MAGIE ALÉATOIRE SYNCHRONISÉE ---
-      // On transforme le code (ex: "ABC") en nombre pour choisir une page entre 1 et 30
-      // Comme le code est le même pour tout le monde, la page sera la même pour tout le monde !
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const randomPage = (seed % 30) + 1; // Page au hasard entre 1 et 30
+      const randomPage = (seed % 30) + 1; 
       setPage(randomPage);
-      // ------------------------------------
 
       if (isHost || roomCodeToJoin) { 
         socket.emit("create_room", targetRoom);
@@ -90,7 +93,7 @@ function App() {
             setGameStarted(false);
             setView("lobby");
           } else {
-            alert("Cette salle n'existe pas ou le code est incorrect.");
+            alert("Erreur de salle.");
           }
         });
       }
@@ -105,19 +108,41 @@ function App() {
     }
     setRoom(result);
     setIsHost(true);
-    // On rejoint directement le lobby avec le nouveau code, sans passer par une vue intermédiaire buggée
     joinLobby(result); 
   };
 
-  const updateSettings = (newGenre, newRating) => {
-    if (newGenre !== null) setSelectedGenre(newGenre);
-    if (newRating !== null) setMinRating(newRating);
+  // Envoi des réglages au serveur (Regroupés)
+  const syncSettings = (updates) => {
+    // updates est un objet partiel { genre: "...", providers: [...] }
+    const newSettings = {
+      genre: selectedGenre,
+      rating: minRating,
+      providers: selectedProviders,
+      voteMode: voteMode,
+      ...updates
+    };
 
+    // Mise à jour locale
+    if (updates.genre !== undefined) setSelectedGenre(updates.genre);
+    if (updates.rating !== undefined) setMinRating(updates.rating);
+    if (updates.providers !== undefined) setSelectedProviders(updates.providers);
+    if (updates.voteMode !== undefined) setVoteMode(updates.voteMode);
+
+    // Envoi serveur
     socket.emit("update_settings", {
       room: room,
-      genre: newGenre !== null ? newGenre : selectedGenre,
-      rating: newRating !== null ? newRating : minRating
+      settings: newSettings
     });
+  };
+
+  const toggleProvider = (id) => {
+    let newProviders;
+    if (selectedProviders.includes(id)) {
+      newProviders = selectedProviders.filter(p => p !== id);
+    } else {
+      newProviders = [...selectedProviders, id];
+    }
+    syncSettings({ providers: newProviders });
   };
 
   const fetchMovies = async () => {
@@ -125,8 +150,22 @@ function App() {
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
     
     if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
-    endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate|rent|buy&primary_release_date.lte=${today}`;
+    
+    // FILTRES DE BASE
+    endpoint += `&watch_region=FR&primary_release_date.lte=${today}`;
+    
+    // FILTRE NOTE
     if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+
+    // FILTRE PLATEFORMES (LE GROS CHANGEMENT)
+    if (selectedProviders.length > 0) {
+      // On cherche les films dispos en Flatrate (Abo) sur CES plateformes
+      endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
+      endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
+    } else {
+      // Si aucune plateforme sélectionnée, on garde le comportement par défaut (tout streaming/achat/loc)
+      endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
+    }
 
     try {
       const response = await axios.get(endpoint);
@@ -148,17 +187,15 @@ function App() {
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
 
-    socket.on("settings_update", (data) => {
-      setSelectedGenre(data.genre);
-      setMinRating(data.rating);
-      // Si on change les réglages, on remet la page à 1 ou on garde l'aléatoire ?
-      // Pour assurer le coup, on repart à la page 1 du nouveau genre
+    socket.on("settings_update", (settings) => {
+      if (settings.genre !== undefined) setSelectedGenre(settings.genre);
+      if (settings.rating !== undefined) setMinRating(settings.rating);
+      if (settings.providers !== undefined) setSelectedProviders(settings.providers);
+      if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
       setPage(1); 
     });
 
-    socket.on("game_started", () => {
-      setGameStarted(true);
-    });
+    socket.on("game_started", () => setGameStarted(true));
 
     socket.on("match_found", (data) => {
       setMatch(data);
@@ -178,27 +215,19 @@ function App() {
     };
   }, []);
 
-  // --- CHARGEMENT DES FILMS ---
   useEffect(() => {
-    if (gameStarted) {
-      fetchMovies();
-    }
+    if (gameStarted) fetchMovies();
   }, [page, gameStarted]); 
 
-  // --- LOGIQUE INFINIE ---
   useEffect(() => {
     if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
       setPage(prev => prev + 1);
     }
   }, [currentIndex, movies.length, gameStarted]);
 
-
-  // --- ACTIONS UTILISATEUR ---
-
-  const startGame = () => {
-    socket.emit("start_game", room);
-  };
-
+  // Actions
+  const startGame = () => socket.emit("start_game", room);
+  
   const leaveRoom = () => {
     setIsInRoom(false);
     setGameStarted(false);
@@ -208,7 +237,6 @@ function App() {
     setRoom("");
     setView("menu");
     setIsHost(false);
-    // On recharge pour nettoyer proprement les sockets
     window.location.reload(); 
   };
 
@@ -229,7 +257,7 @@ function App() {
         movieId: currentMovie.id, 
         movieTitle: currentMovie.title,
         moviePoster: currentMovie.poster_path,
-        userId: userId // 👈 IMPORTANT : On envoie ton ID unique
+        userId: userId
       });
     }
     setCurrentIndex((prev) => prev + 1);
@@ -244,33 +272,36 @@ function App() {
   };
 
   const resetMyMatches = () => {
-    if(confirm("Voulez-vous vraiment effacer tous vos matchs ?")) {
+    if(confirm("Vider l'historique ?")) {
       localStorage.removeItem('myMatches');
       setSavedMatches([]);
     }
   };
 
-  // --- ECRANS D'AFFICHAGE ---
+  // Gestion des logos sur la carte (Appel API individuel)
+  useEffect(() => {
+    if (movies.length > 0 && currentIndex < movies.length) {
+      const currentMovie = movies[currentIndex];
+      axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
+        .then(response => {
+          const frData = response.data.results.FR;
+          setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
+        })
+        .catch(err => console.error(err));
+    }
+  }, [currentIndex, movies]);
 
-  // 1. ECRAN MES MATCHS
+
+  // --- AFFICHAGE ---
+
   if (showMyMatches) {
     return (
       <div className="matches-screen">
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
         <h2>Mes Matchs</h2>
-        
         {savedMatches.length > 0 && (
-          <button 
-            onClick={resetMyMatches}
-            style={{
-              background: '#333', color: '#ff4757', border: '1px solid #ff4757', 
-              padding: '8px 15px', borderRadius: '20px', marginBottom: '15px', cursor: 'pointer'
-            }}
-          >
-            🗑️ Réinitialiser mes matchs
-          </button>
+          <button onClick={resetMyMatches} className="btn-reset">🗑️ Réinitialiser</button>
         )}
-
         <div className="matches-grid">
           {savedMatches.map(id => <MatchItem key={id} movieId={id} />)}
         </div>
@@ -278,110 +309,123 @@ function App() {
     );
   }
 
-  // 2. POPUP MATCH
   if (match) {
     return (
       <div className="match-overlay">
         <h1 className="match-title">IT'S A MATCH!</h1>
         {match.moviePoster && (
-          <img 
-            src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} 
-            alt={match.movieTitle} 
-            style={{borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', margin: '20px 0', maxHeight: '300px'}}
-          />
+          <img src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} alt={match.movieTitle} className="match-poster"/>
         )}
-        <h2 style={{margin: '10px 0 30px 0'}}>{match.movieTitle}</h2>
+        <h2>{match.movieTitle}</h2>
         <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
       </div>
     );
   }
 
-  // 3. LOBBY
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
         <h1>Salle d'attente</h1>
-        
-        <div 
-          className="-display" 
-          onClick={shareCode}
-          title="Toucher pour partager"
-        >
+        <div className="room-code-display" onClick={shareCode}>
           <h2 className="code-text">{room}</h2>
           <span className="click-hint">Toucher pour copier</span>
         </div>
-
         <p style={{color: '#aaa', marginBottom: '20px'}}>
-          Joueurs connectés : <strong style={{color: 'white', fontSize: '1.2rem'}}>{playerCount}</strong>
+          Joueurs : <strong style={{color: 'white', fontSize: '1.2rem'}}>{playerCount}</strong>
         </p>
 
         {isHost ? (
           <div className="room-settings">
-            <label>Genre :</label>
-            <select value={selectedGenre} onChange={(e) => updateSettings(e.target.value, null)}>
-              <option value="">Tous les genres</option>
-              <option value="28">Action</option>
-              <option value="35">Comédie</option>
-              <option value="27">Horreur</option>
-              <option value="10749">Romance</option>
-              <option value="16">Animation</option>
-            </select>
+            
+            {/* 1. VOS ABONNEMENTS */}
+            <label>Vos Abonnements :</label>
+            <div className="providers-select">
+              {PLATFORMS.map(p => (
+                <div 
+                  key={p.id} 
+                  className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
+                  onClick={() => toggleProvider(p.id)}
+                >
+                  <img src={p.logo} alt={p.name} />
+                </div>
+              ))}
+            </div>
 
-            <label>Qualité :</label>
-            <select value={minRating} onChange={(e) => updateSettings(null, e.target.value)}>
-              <option value="0">Peu importe</option>
-              <option value="7">7/10 (Bon)</option>
-              <option value="8">8/10 (Excellent)</option>
-            </select>
+            {/* 2. MODE DE JEU */}
+            <label>Mode de vote :</label>
+            <div className="vote-mode-selector">
+              <button 
+                className={voteMode === 'majority' ? 'mode-active' : ''} 
+                onClick={() => syncSettings({voteMode: 'majority'})}
+              >
+                Majorité (50%)
+              </button>
+              <button 
+                className={voteMode === 'unanimity' ? 'mode-active' : ''} 
+                onClick={() => syncSettings({voteMode: 'unanimity'})}
+              >
+                Unanimité (100%)
+              </button>
+            </div>
 
-            <button className="primary-btn" style={{marginTop: '30px'}} onClick={startGame}>
-              LANCER LA PARTIE
-            </button>
+            <label>Genre & Qualité :</label>
+            <div className="filters-row">
+              <select value={selectedGenre} onChange={(e) => syncSettings({genre: e.target.value})}>
+                <option value="">Tous Genres</option>
+                <option value="28">Action</option>
+                <option value="35">Comédie</option>
+                <option value="27">Horreur</option>
+                <option value="10749">Romance</option>
+                <option value="16">Animation</option>
+              </select>
+              <select value={minRating} onChange={(e) => syncSettings({rating: e.target.value})}>
+                <option value="0">Toute Note</option>
+                <option value="7">7+ (Bon)</option>
+                <option value="8">8+ (Top)</option>
+              </select>
+            </div>
+
+            <button className="primary-btn" style={{marginTop: '20px'}} onClick={startGame}>LANCER 🚀</button>
           </div>
         ) : (
-          <div style={{marginTop: '30px', padding: '20px', background: '#333', borderRadius: '15px'}}>
-            <p className="pulse">En attente de l'hôte pour le lancement de la partie...</p>
+          <div className="waiting-box">
+            <p className="pulse">En attente de l'hôte...</p>
+            {/* On affiche les réglages choisis par l'hôte à titre indicatif */}
+            <div className="guest-settings-preview">
+               <small>Mode: {voteMode === 'majority' ? 'Majorité' : 'Unanimité'}</small>
+               <br/>
+               <small>Plateformes: {selectedProviders.length > 0 ? selectedProviders.length + ' choisies' : 'Toutes'}</small>
+            </div>
           </div>
         )}
-        
         <button className="btn-back" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
       </div>
     );
   }
 
-  // 4. MENU ACCUEIL
   if (!isInRoom) {
     return (
       <div className="welcome-screen">
-        <h1>Movie Match</h1>
-
+        <h1>Movie Match 🍿</h1>
         {view === "menu" && (
           <div className="menu-buttons">
             <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
             <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
-            <button onClick={() => setShowMyMatches(true)} style={{marginTop: '20px', background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline'}}>Voir mes matchs</button>
+            <button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
           </div>
         )}
-
         {view === "join" && (
           <div className="input-group">
-            <input 
-              type="text" 
-              placeholder="Entrez le code..." 
-              onChange={(e) => setRoom(e.target.value.toUpperCase())}
-            />
-            {/* on passe null pour dire qu'on utilise le state 'room' */}
+            <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
             <button className="primary-btn" onClick={() => joinLobby(null)}>Valider</button>
-            <button className="btn-back" style={{marginTop: '10px'}} onClick={() => setView("menu")}>Annuler</button>
+            <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
           </div>
         )}
       </div>
     );
   }
 
-  // 5. JEU
-  if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement de la suite...</h2></div>;
-
+  if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement...</h2></div>;
   const movie = movies[currentIndex];
 
   return (
@@ -389,30 +433,23 @@ function App() {
       <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
       <motion.div 
         className="movie-card"
-        drag="x"
-        dragConstraints={{ left: 0, right: 0 }}
-        onDragEnd={handleDragEnd}
+        drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
         style={{ x, rotate, opacity }}
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.8, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        initial={{ scale: 0.8 }} animate={{ scale: 1 }}
       >
-        <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} alt={movie.title} draggable="false" />
+        <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
         <div className="movie-info">
-          <div className="text-content">
-            <div className="providers-container">
-              {providers.map((p) => (
-                <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" title={p.provider_name} />
-              ))}
-            </div>
-            <h2>{movie.title}</h2>
-            <p className="movie-desc">{movie.overview}</p>
+          <div className="providers-container">
+            {providersDisplay.map((p) => (
+              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
+            ))}
           </div>
-          <div className="actions">
-            <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
-            <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
-          </div>
+          <h2>{movie.title}</h2>
+          <p className="movie-desc">{movie.overview}</p>
+        </div>
+        <div className="actions">
+          <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
+          <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
         </div>
       </motion.div>
       <Analytics />
