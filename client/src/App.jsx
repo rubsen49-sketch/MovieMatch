@@ -3,7 +3,7 @@ import io from 'socket.io-client';
 import axios from 'axios';
 import './App.css';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
-import { Analytics } from "@vercel/analytics/next"
+import { Analytics } from "@vercel/analytics/react";
 
 const SOCKET_URL = import.meta.env.MODE === 'development' 
   ? "http://localhost:3001" 
@@ -403,6 +403,7 @@ function App() {
           </div>
         </div>
       </motion.div>
+      <Analytics />
     </div>
   );
 }
