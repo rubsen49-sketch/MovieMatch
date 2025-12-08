@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import './App.css';
@@ -10,6 +10,16 @@ const SOCKET_URL = import.meta.env.MODE === 'development'
 
 const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
+
+// Fonction utilitaire pour générer ou récupérer un ID unique par appareil
+const getUserId = () => {
+  let id = localStorage.getItem('userId');
+  if (!id) {
+    id = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('userId', id);
+  }
+  return id;
+};
 
 const MatchItem = ({ movieId }) => {
   const [movieData, setMovieData] = useState(null);
@@ -44,11 +54,38 @@ function App() {
   
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
+  const userId = useRef(getUserId()).current; // ID unique stable
 
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // --- FONCTIONS LOGIQUES ---
+
+  // Refonte de la fonction rejoindre pour accepter un argument optionnel
+  const joinLobby = (roomCodeToJoin = null) => {
+    const targetRoom = roomCodeToJoin || room;
+    if (targetRoom !== "") {
+      if (isHost || roomCodeToJoin) { // Si c'est l'hôte ou une création directe
+        socket.emit("create_room", targetRoom);
+        setIsInRoom(true);
+        setGameStarted(false);
+        setView("lobby");
+      } else {
+        // L'invité REJOINT (avec vérification serveur)
+        socket.emit("join_room", targetRoom, (response) => {
+          if (response.status === "ok") {
+            setIsInRoom(true);
+            setGameStarted(false);
+            setView("lobby");
+          } else {
+            alert("Cette salle n'existe pas ou le code est incorrect.");
+          }
+        });
+      }
+    }
+  };
 
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -58,7 +95,8 @@ function App() {
     }
     setRoom(result);
     setIsHost(true);
-    setView("create"); 
+    // On rejoint directement le lobby avec le nouveau code, sans passer par une vue intermédiaire buggée
+    joinLobby(result); 
   };
 
   const updateSettings = (newGenre, newRating) => {
@@ -127,12 +165,14 @@ function App() {
     };
   }, []);
 
+  // --- CHARGEMENT DES FILMS ---
   useEffect(() => {
     if (gameStarted) {
       fetchMovies();
     }
   }, [page, gameStarted]); 
 
+  // --- LOGIQUE INFINIE ---
   useEffect(() => {
     if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
       setPage(prev => prev + 1);
@@ -140,26 +180,7 @@ function App() {
   }, [currentIndex, movies.length, gameStarted]);
 
 
-  const joinLobby = () => {
-    if (room !== "") {
-      if (isHost) {
-        socket.emit("create_room", room);
-        setIsInRoom(true);
-        setGameStarted(false);
-        setView("lobby");
-      } else {
-        socket.emit("join_room", room, (response) => {
-          if (response.status === "ok") {
-            setIsInRoom(true);
-            setGameStarted(false);
-            setView("lobby");
-          } else {
-            alert("Cette salle n'existe pas ou le code est incorrect.");
-          }
-        });
-      }
-    }
-  };
+  // --- ACTIONS UTILISATEUR ---
 
   const startGame = () => {
     socket.emit("start_game", room);
@@ -174,6 +195,7 @@ function App() {
     setRoom("");
     setView("menu");
     setIsHost(false);
+    // On recharge pour nettoyer proprement les sockets
     window.location.reload(); 
   };
 
@@ -189,12 +211,12 @@ function App() {
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
     if (direction === "right") {
-      // ON ENVOIE MAINTENANT L'AFFICHE (poster_path) POUR LE POPUP
       socket.emit("swipe_right", { 
         room, 
         movieId: currentMovie.id, 
         movieTitle: currentMovie.title,
-        moviePoster: currentMovie.poster_path 
+        moviePoster: currentMovie.poster_path,
+        userId: userId // 👈 IMPORTANT : On envoie ton ID unique
       });
     }
     setCurrentIndex((prev) => prev + 1);
@@ -208,7 +230,6 @@ function App() {
     else if (info.offset.x < -100) handleSwipe("left");
   };
 
-  // FONCTION POUR VIDER LES MATCHS
   const resetMyMatches = () => {
     if(confirm("Voulez-vous vraiment effacer tous vos matchs ?")) {
       localStorage.removeItem('myMatches');
@@ -216,9 +237,9 @@ function App() {
     }
   };
 
-  // --- ECRANS ---
+  // --- ECRANS D'AFFICHAGE ---
 
-  // 1. ECRAN MES MATCHS (Avec Bouton Reset)
+  // 1. ECRAN MES MATCHS
   if (showMyMatches) {
     return (
       <div className="matches-screen">
@@ -244,12 +265,11 @@ function App() {
     );
   }
 
-  // 2. POPUP MATCH (Avec Affiche)
+  // 2. POPUP MATCH
   if (match) {
     return (
       <div className="match-overlay">
         <h1 className="match-title">IT'S A MATCH!</h1>
-        {/* Affichage de l'image du film matché */}
         {match.moviePoster && (
           <img 
             src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} 
@@ -337,16 +357,10 @@ function App() {
               placeholder="Entrez le code..." 
               onChange={(e) => setRoom(e.target.value.toUpperCase())}
             />
-            <button className="primary-btn" onClick={joinLobby}>Valider</button>
+            {/* on passe null pour dire qu'on utilise le state 'room' */}
+            <button className="primary-btn" onClick={() => joinLobby(null)}>Valider</button>
             <button className="btn-back" style={{marginTop: '10px'}} onClick={() => setView("menu")}>Annuler</button>
           </div>
-        )}
-
-        {view === "create" && (
-            <div className="input-group">
-                <p>Création de la salle...</p>
-                {setTimeout(() => joinLobby(), 100) && ""}
-            </div>
         )}
       </div>
     );

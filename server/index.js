@@ -43,26 +43,19 @@ io.on("connection", (socket) => {
   });
 
   // 3. SWIPE (C'est là qu'on corrige le bug !)
+  // 3. SWIPE
   socket.on("swipe_right", (data) => {
-    const { room, movieId } = data;
+    const { room, movieId, userId } = data; // On récupère l'userId
 
-    // Si la salle n'a pas encore de mémoire, on la crée
-    if (!roomLikes[room]) {
-      roomLikes[room] = {};
-    }
+    if (!roomLikes[room]) roomLikes[room] = {};
+    if (!roomLikes[room][movieId]) roomLikes[room][movieId] = new Set();
 
-    // Si le film n'a pas encore de likes, on crée la liste
-    if (!roomLikes[room][movieId]) {
-      roomLikes[room][movieId] = new Set();
-    }
+    // ICI : On utilise userId au lieu de socket.id
+    // Cela empêche qu'un même téléphone compte pour 2 personnes s'il se reconnecte
+    const idToUse = userId || socket.id; 
+    roomLikes[room][movieId].add(idToUse);
 
-    // On ajoute l'ID du joueur qui a liké
-    roomLikes[room][movieId].add(socket.id);
-
-    // VERIFICATION DU MATCH
-    // Si il y a 2 likes (ou plus) sur ce film dans cette salle
     if (roomLikes[room][movieId].size >= 2) {
-      // ALORS c'est un vrai match, on prévient tout le monde
       io.to(room).emit("match_found", data);
     }
   });
