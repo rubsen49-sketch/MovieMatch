@@ -5,6 +5,7 @@ import './App.css';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Analytics } from "@vercel/analytics/react";
 
+// ... (Garder les constantes SOCKET_URL, API_KEY, PLATFORMS, getUserId inchangées) ...
 const SOCKET_URL = import.meta.env.MODE === 'development' 
   ? "http://localhost:3001" 
   : "https://moviematch-backend-0om3.onrender.com";
@@ -28,56 +29,102 @@ const getUserId = () => {
   return id;
 };
 
-const MatchItem = ({ movieId }) => {
-  const [movieData, setMovieData] = useState(null);
+// --- NOUVEAU COMPOSANT : MODALE DE DÉTAILS ---
+const MovieDetailModal = ({ movie, onClose }) => {
+  const [fullDetails, setFullDetails] = useState(movie);
+
   useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
-      .then(res => setMovieData(res.data))
-      .catch(err => console.error(err));
-  }, [movieId]);
-  if (!movieData) return <div className="mini-card">...</div>;
+    // Si on n'a pas la description (cas du Match parfois), on la récupère
+    if (!movie.overview && movie.id) {
+      axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR`)
+        .then(res => setFullDetails(res.data))
+        .catch(err => console.error(err));
+    }
+  }, [movie]);
+
+  if (!fullDetails) return null;
+
+  // Gestion de l'image (compatible avec format Match ou format Movie)
+  const posterSrc = fullDetails.poster_path 
+    ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}`
+    : fullDetails.moviePoster // Fallback pour l'objet match
+      ? `https://image.tmdb.org/t/p/w500${fullDetails.moviePoster}`
+      : "";
+
+  const title = fullDetails.title || fullDetails.movieTitle;
+
   return (
-    <div className="mini-card">
-      <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
-      <h3>{movieData.title}</h3>
+    <div className="modal-overlay" onClick={onClose}>
+      <motion.div 
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+      >
+        <button className="close-modal" onClick={onClose}>✕</button>
+        <div className="modal-scroll">
+          <img src={posterSrc} alt={title} className="modal-poster" />
+          <div className="modal-text">
+            <h2>{title}</h2>
+            {fullDetails.release_date && <span className="modal-date">Sortie : {fullDetails.release_date.split('-')[0]}</span>}
+            <p className="modal-overview">{fullDetails.overview || "Pas de description disponible."}</p>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 };
 
+// ... (MatchItem reste inchangé) ...
+const MatchItem = ({ movieId }) => {
+    const [movieData, setMovieData] = useState(null);
+    useEffect(() => {
+      axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
+        .then(res => setMovieData(res.data))
+        .catch(err => console.error(err));
+    }, [movieId]);
+    if (!movieData) return <div className="mini-card">...</div>;
+    return (
+      <div className="mini-card">
+        <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
+        <h3>{movieData.title}</h3>
+      </div>
+    );
+  };
+
 function App() {
+  // ... (États existants inchangés) ...
   const [room, setRoom] = useState("");
   const [isInRoom, setIsInRoom] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
-  
   const [movies, setMovies] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [match, setMatch] = useState(null);
   const [page, setPage] = useState(1);
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
-  
-  // REGLAGES
   const [selectedGenre, setSelectedGenre] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [selectedProviders, setSelectedProviders] = useState([]); 
   const [voteMode, setVoteMode] = useState('majority'); 
   const [showHostSettings, setShowHostSettings] = useState(false);
-
   const [providersDisplay, setProvidersDisplay] = useState([]); 
-  
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const userId = useRef(getUserId()).current;
-
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
 
+  // --- NOUVEL ÉTAT ---
+  const [detailsMovie, setDetailsMovie] = useState(null); // Le film affiché en détail
+
+  // ... (Fonctions joinLobby, generateRoomCode, syncSettings, toggleProvider, fetchMovies inchangées) ...
+  
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
     if (targetRoom !== "") {
-      // CALCUL DE LA PAGE ALÉATOIRE BASÉ SUR LE CODE (Le même pour tout le monde)
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const randomPage = (seed % 30) + 1; 
       setPage(randomPage);
@@ -159,8 +206,6 @@ function App() {
 
     try {
       const response = await axios.get(endpoint);
-      
-      // ON NE FILTRE PLUS LOCALEMENT pour garantir la même liste à tout le monde
       const newMovies = response.data.results; 
       
       if (newMovies.length === 0 && page < 500) {
@@ -174,19 +219,16 @@ function App() {
     }
   };
 
+
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
-
     socket.on("settings_update", (settings) => {
       if (settings.genre !== undefined) setSelectedGenre(settings.genre);
       if (settings.rating !== undefined) setMinRating(settings.rating);
       if (settings.providers !== undefined) setSelectedProviders(settings.providers);
       if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
-      // ICI : J'ai supprimé setPage(1) pour que tout le monde garde la page aléatoire
     });
-
     socket.on("game_started", () => setGameStarted(true));
-
     socket.on("match_found", (data) => {
       setMatch(data);
       const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
@@ -247,6 +289,8 @@ function App() {
         movieId: currentMovie.id, 
         movieTitle: currentMovie.title,
         moviePoster: currentMovie.poster_path,
+        // J'ajoute l'overview ici pour l'avoir si ça match tout de suite
+        overview: currentMovie.overview,
         userId: userId
       });
     }
@@ -283,6 +327,12 @@ function App() {
 
   // --- AFFICHAGE ---
 
+  // 1. GESTION DU MODAL (S'affiche par dessus tout si detailsMovie existe)
+  const renderModal = () => {
+    if (!detailsMovie) return null;
+    return <MovieDetailModal movie={detailsMovie} onClose={() => setDetailsMovie(null)} />;
+  };
+
   if (showMyMatches) {
     return (
       <div className="matches-screen">
@@ -298,20 +348,36 @@ function App() {
     );
   }
 
+  // 2. MODIFICATION ÉCRAN MATCH
   if (match) {
     return (
-      <div className="match-overlay">
-        <h1 className="match-title">IT'S A MATCH!</h1>
-        {match.moviePoster && (
-          <img src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} alt={match.movieTitle} className="match-poster"/>
-        )}
-        <h2>{match.movieTitle}</h2>
-        <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
-      </div>
+      <>
+        {renderModal()}
+        <div className="match-overlay">
+          <h1 className="match-title">IT'S A MATCH!</h1>
+          {match.moviePoster && (
+            <img 
+              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`} 
+              alt={match.movieTitle} 
+              className="match-poster clickable" 
+              // Au clic, on ouvre les détails. On passe un objet formaté pour que le modal comprenne.
+              onClick={() => setDetailsMovie({ 
+                id: match.movieId, 
+                title: match.movieTitle, 
+                poster_path: match.moviePoster,
+                overview: match.overview // Si passé par le socket
+              })}
+            />
+          )}
+          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+          <h2>{match.movieTitle}</h2>
+          <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
+        </div>
+      </>
     );
   }
 
-  // --- LOBBY ---
+  // --- LOBBY (Reste inchangé) ---
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
@@ -328,7 +394,6 @@ function App() {
         {isHost ? (
           <>
             {!showHostSettings ? (
-              // Menu Hôte
               <div className="host-lobby-menu">
                 <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
                   Paramètres de la partie
@@ -339,7 +404,6 @@ function App() {
                 </button>
               </div>
             ) : (
-              // Réglages Hôte
               <div className="room-settings">
                 <h3>Paramètres</h3>
                 
@@ -404,7 +468,6 @@ function App() {
             )}
           </>
         ) : (
-          // Vue Invité
           <div className="waiting-box">
             <p className="pulse">En attente de l'hôte...</p>
             <div className="guest-settings-preview">
@@ -453,14 +516,20 @@ function App() {
 
   return (
     <div className="card-container">
+      {renderModal()} {/* La modale peut s'afficher ici aussi */}
       <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
+      
       <motion.div 
         className="movie-card"
         drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
         style={{ x, rotate, opacity }}
         initial={{ scale: 0.8 }} animate={{ scale: 1 }}
       >
-        <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+        <div className="movie-poster-wrapper" onClick={() => setDetailsMovie(movie)}>
+           <img className="movie-poster clickable" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+           <div className="info-hint">ℹ️ Infos</div>
+        </div>
+        
         <div className="movie-info">
           <div className="providers-container">
             {providersDisplay.map((p) => (
@@ -468,8 +537,9 @@ function App() {
             ))}
           </div>
           <h2>{movie.title}</h2>
-          <p className="movie-desc">{movie.overview}</p>
+          {/* DESCRIPTION SUPPRIMÉE ICI */}
         </div>
+        
         <div className="actions">
           <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
           <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
