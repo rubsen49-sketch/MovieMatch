@@ -134,6 +134,28 @@ function App() {
     }
   };
 
+  const shareCode = async () => {
+    // Le message à envoyer
+    const shareData = {
+      title: 'MovieMatch 🍿',
+      text: `Rejoins-moi sur MovieMatch pour choisir un film ! \nCode salle : ${room}`,
+      url: window.location.href // Lien du site
+    };
+
+    try {
+      // Si le navigateur supporte le partage natif (Mobile)
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        // Sinon on copie juste le code (PC)
+        await navigator.clipboard.writeText(room);
+        alert("Code copié dans le presse-papier ! 📋");
+      }
+    } catch (err) {
+      console.error("Erreur de partage :", err);
+    }
+  };
+
   const leaveRoom = () => {
     setIsInRoom(false);
     setMovies([]);
@@ -230,6 +252,9 @@ function App() {
             <p style={{marginBottom: '5px', color: '#aaa'}}>Voici le code de votre salle :</p>
             <div className="room-code-display">
               <h2 className="code-text">{room}</h2>
+              <button className="btn-share" onClick={shareCode} title="Partager le code">
+                🔗
+              </button>
             </div>
             
             <div className="room-settings">
