@@ -12,7 +12,6 @@ const SOCKET_URL = import.meta.env.MODE === 'development'
 const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
-// Liste des IDs des plateformes (TMDB IDs pour la France)
 const PLATFORMS = [
   { id: 8, name: "Netflix", logo: "https://image.tmdb.org/t/p/original/t2yyOv40HZeVdHjatsN81q2kqyn.jpg" },
   { id: 337, name: "Disney+", logo: "https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg" },
@@ -57,13 +56,14 @@ function App() {
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
   
-  // --- NOUVEAUX REGLAGES ---
+  // NOUVEAUX REGLAGES
   const [selectedGenre, setSelectedGenre] = useState("");
   const [minRating, setMinRating] = useState(0);
-  const [selectedProviders, setSelectedProviders] = useState([]); // Tableau d'IDs
-  const [voteMode, setVoteMode] = useState('majority'); // 'majority' ou 'unanimity'
+  const [selectedProviders, setSelectedProviders] = useState([]); 
+  const [voteMode, setVoteMode] = useState('majority'); 
+  const [showHostSettings, setShowHostSettings] = useState(false); // Pour afficher/cacher le menu réglages
 
-  const [providersDisplay, setProvidersDisplay] = useState([]); // Pour l'affichage sur la carte
+  const [providersDisplay, setProvidersDisplay] = useState([]); 
   
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
@@ -111,9 +111,7 @@ function App() {
     joinLobby(result); 
   };
 
-  // Envoi des réglages au serveur (Regroupés)
   const syncSettings = (updates) => {
-    // updates est un objet partiel { genre: "...", providers: [...] }
     const newSettings = {
       genre: selectedGenre,
       rating: minRating,
@@ -122,13 +120,11 @@ function App() {
       ...updates
     };
 
-    // Mise à jour locale
     if (updates.genre !== undefined) setSelectedGenre(updates.genre);
     if (updates.rating !== undefined) setMinRating(updates.rating);
     if (updates.providers !== undefined) setSelectedProviders(updates.providers);
     if (updates.voteMode !== undefined) setVoteMode(updates.voteMode);
 
-    // Envoi serveur
     socket.emit("update_settings", {
       room: room,
       settings: newSettings
@@ -150,27 +146,24 @@ function App() {
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
     
     if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
-    
-    // FILTRES DE BASE
     endpoint += `&watch_region=FR&primary_release_date.lte=${today}`;
-    
-    // FILTRE NOTE
     if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
 
-    // FILTRE PLATEFORMES (LE GROS CHANGEMENT)
     if (selectedProviders.length > 0) {
-      // On cherche les films dispos en Flatrate (Abo) sur CES plateformes
       endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
       endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
     } else {
-      // Si aucune plateforme sélectionnée, on garde le comportement par défaut (tout streaming/achat/loc)
       endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
     }
 
     try {
       const response = await axios.get(endpoint);
-      const trophies = JSON.parse(localStorage.getItem('myMatches')) || [];
-      const newMovies = response.data.results.filter(movie => !trophies.includes(movie.id));
+      
+      // 🚨 CORRECTION SYNCHRO : On ne filtre PLUS par rapport à l'historique personnel "myMatches".
+      // Si on filtre localement, les listes deviennent différentes entre les joueurs.
+      // On prend la liste brute de l'API pour que tout le monde ait la même.
+      
+      const newMovies = response.data.results; 
       
       if (newMovies.length === 0 && page < 500) {
         setPage(prev => prev + 1);
@@ -183,7 +176,6 @@ function App() {
     }
   };
 
-  // --- SOCKET LISTENERS ---
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
 
@@ -225,7 +217,6 @@ function App() {
     }
   }, [currentIndex, movies.length, gameStarted]);
 
-  // Actions
   const startGame = () => socket.emit("start_game", room);
   
   const leaveRoom = () => {
@@ -237,6 +228,7 @@ function App() {
     setRoom("");
     setView("menu");
     setIsHost(false);
+    setShowHostSettings(false); // Reset de l'écran settings
     window.location.reload(); 
   };
 
@@ -278,7 +270,6 @@ function App() {
     }
   };
 
-  // Gestion des logos sur la carte (Appel API individuel)
   useEffect(() => {
     if (movies.length > 0 && currentIndex < movies.length) {
       const currentMovie = movies[currentIndex];
@@ -322,10 +313,13 @@ function App() {
     );
   }
 
+  // --- LOBBY AVEC LOGIQUE HÔTE AMÉLIORÉE ---
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
         <h1>Salle d'attente</h1>
+        
+        {/* En-tête Commun : Code + Joueurs */}
         <div className="room-code-display" onClick={shareCode}>
           <h2 className="code-text">{room}</h2>
           <span className="click-hint">Toucher pour copier</span>
@@ -335,70 +329,105 @@ function App() {
         </p>
 
         {isHost ? (
-          <div className="room-settings">
-            
-            {/* 1. VOS ABONNEMENTS */}
-            <label>Vos Abonnements :</label>
-            <div className="providers-select">
-              {PLATFORMS.map(p => (
-                <div 
-                  key={p.id} 
-                  className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
-                  onClick={() => toggleProvider(p.id)}
-                >
-                  <img src={p.logo} alt={p.name} />
+          <>
+            {/* VUE HÔTE : CHOIX ENTRE MENU PRINCIPAL OU REGLAGES */}
+            {!showHostSettings ? (
+              // 1. Menu Principal du Lobby Hôte (Léger)
+              <div className="host-lobby-menu">
+                <button className="settings-btn" onClick={() => setShowHostSettings(true)}>
+                  ⚙️ Paramètres de la partie
+                </button>
+                <div style={{height: '20px'}}></div>
+                <button className="primary-btn" onClick={startGame}>
+                  LANCER LA PARTIE 🚀
+                </button>
+              </div>
+            ) : (
+              // 2. Menu des Réglages (Détaillé)
+              <div className="room-settings">
+                <h3>Paramètres</h3>
+                
+                <label>Vos Abonnements :</label>
+                <div className="providers-select">
+                  {PLATFORMS.map(p => (
+                    <div 
+                      key={p.id} 
+                      className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
+                      onClick={() => toggleProvider(p.id)}
+                    >
+                      <img src={p.logo} alt={p.name} />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* 2. MODE DE JEU */}
-            <label>Mode de vote :</label>
-            <div className="vote-mode-selector">
-              <button 
-                className={voteMode === 'majority' ? 'mode-active' : ''} 
-                onClick={() => syncSettings({voteMode: 'majority'})}
-              >
-                Majorité (50%)
-              </button>
-              <button 
-                className={voteMode === 'unanimity' ? 'mode-active' : ''} 
-                onClick={() => syncSettings({voteMode: 'unanimity'})}
-              >
-                Unanimité (100%)
-              </button>
-            </div>
+                {/* LOGIQUE SOLO vs GROUPE */}
+                {playerCount > 1 ? (
+                  <>
+                    <label>Mode de vote :</label>
+                    <div className="vote-mode-selector">
+                      <button 
+                        className={voteMode === 'majority' ? 'mode-active' : ''} 
+                        onClick={() => syncSettings({voteMode: 'majority'})}
+                      >
+                        Majorité (50%)
+                      </button>
+                      <button 
+                        className={voteMode === 'unanimity' ? 'mode-active' : ''} 
+                        onClick={() => syncSettings({voteMode: 'unanimity'})}
+                      >
+                        Unanimité (100%)
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="solo-mode-badge">
+                    🕵️‍♂️ Mode Découverte (Solo)
+                  </div>
+                )}
 
-            <label>Genre & Qualité :</label>
-            <div className="filters-row">
-              <select value={selectedGenre} onChange={(e) => syncSettings({genre: e.target.value})}>
-                <option value="">Tous Genres</option>
-                <option value="28">Action</option>
-                <option value="35">Comédie</option>
-                <option value="27">Horreur</option>
-                <option value="10749">Romance</option>
-                <option value="16">Animation</option>
-              </select>
-              <select value={minRating} onChange={(e) => syncSettings({rating: e.target.value})}>
-                <option value="0">Toute Note</option>
-                <option value="7">7+ (Bon)</option>
-                <option value="8">8+ (Top)</option>
-              </select>
-            </div>
+                <label>Genre & Qualité :</label>
+                <div className="filters-row">
+                  <select value={selectedGenre} onChange={(e) => syncSettings({genre: e.target.value})}>
+                    <option value="">Tous Genres</option>
+                    <option value="28">Action</option>
+                    <option value="35">Comédie</option>
+                    <option value="27">Horreur</option>
+                    <option value="10749">Romance</option>
+                    <option value="16">Animation</option>
+                  </select>
+                  <select value={minRating} onChange={(e) => syncSettings({rating: e.target.value})}>
+                    <option value="0">Toute Note</option>
+                    <option value="7">7+ (Bon)</option>
+                    <option value="8">8+ (Top)</option>
+                  </select>
+                </div>
 
-            <button className="primary-btn" style={{marginTop: '20px'}} onClick={startGame}>LANCER 🚀</button>
-          </div>
+                <button className="btn-back" style={{marginTop: '20px'}} onClick={() => setShowHostSettings(false)}>
+                  ✅ Valider & Retour
+                </button>
+              </div>
+            )}
+          </>
         ) : (
+          // VUE INVITÉ (Reste simple)
           <div className="waiting-box">
             <p className="pulse">En attente de l'hôte...</p>
-            {/* On affiche les réglages choisis par l'hôte à titre indicatif */}
             <div className="guest-settings-preview">
-               <small>Mode: {voteMode === 'majority' ? 'Majorité' : 'Unanimité'}</small>
+               <small>
+                 {playerCount > 1 
+                   ? `Mode: ${voteMode === 'majority' ? 'Majorité' : 'Unanimité'}` 
+                   : 'Mode Solo'}
+               </small>
                <br/>
                <small>Plateformes: {selectedProviders.length > 0 ? selectedProviders.length + ' choisies' : 'Toutes'}</small>
             </div>
           </div>
         )}
-        <button className="btn-back" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
+        
+        {/* Le bouton quitter est toujours visible en bas, sauf si on est dans les réglages */}
+        {!showHostSettings && (
+          <button className="btn-back" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
+        )}
       </div>
     );
   }

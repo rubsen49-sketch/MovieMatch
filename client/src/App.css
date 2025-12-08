@@ -585,3 +585,34 @@ button.primary-btn:active {
   text-decoration: underline;
   cursor: pointer;
 }
+/* --- CSS POUR LE NOUVEAU LOBBY --- */
+
+.settings-btn {
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+  padding: 15px;
+  width: 100%;
+  border-radius: 12px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.settings-btn:hover {
+  background: #444;
+}
+
+.solo-mode-badge {
+  background: rgba(46, 204, 113, 0.1);
+  color: var(--green);
+  border: 1px solid var(--green);
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
