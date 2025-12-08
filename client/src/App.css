@@ -4,17 +4,10 @@
   --bg-card: #1e1e1e;
   --text-main: #ffffff;
   --text-sub: #a1a1a1;
-
   --primary: #e50914;
-  /* Rouge Netflix */
-
-  /* 👇 ADIEU LE VERT, BONJOUR LE ROSE/ORANGE 👇 */
   --green: #ff6b81;
-  /* On garde le nom de variable pour pas casser le code, mais c'est du Rose Corail */
-
+  /* Rose Corail */
   --red: #ff4757;
-
-  /* Nouveau dégradé "Sunset" pour les boutons validation */
   --gradient-sunset: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
 }
 
@@ -455,11 +448,31 @@ button.primary-btn:active {
   letter-spacing: 1px;
 }
 
+/* --- PARAMÈTRES AVEC SCROLL --- */
 .room-settings {
   display: flex;
   flex-direction: column;
   gap: 15px;
   text-align: left;
+
+  /* Gestion du Scroll */
+  max-height: 60vh;
+  /* Limite la hauteur à 60% de l'écran */
+  overflow-y: auto;
+  /* Active le scroll vertical si nécessaire */
+  padding-right: 5px;
+  /* Petit espace pour éviter que le texte touche le bord */
+
+  /* Cacher la barre de scroll (Chrome, Safari, Opera) */
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+/* Cacher la barre de scroll (Chrome, Safari, Opera) */
+.room-settings::-webkit-scrollbar {
+  display: none;
 }
 
 .room-settings label {
