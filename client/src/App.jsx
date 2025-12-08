@@ -13,10 +13,10 @@ const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
 const PLATFORMS = [
-  { id: 8, name: "Netflix", logo: "https://image.tmdb.org/t/p/original/t2yyOv40HZeVdHjatsN81q2kqyn.jpg" },
-  { id: 337, name: "Disney+", logo: "https://image.tmdb.org/t/p/original/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg" },
-  { id: 119, name: "Amazon Prime", logo: "https://image.tmdb.org/t/p/original/emthp39XA2YScoU8t5t7TB38rWO.jpg" },
-  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/69exmF93d4W866n76hT23555k3.jpg" }
+  { id: 8, name: "Netflix", logo: "https://image.tmdb.org/t/p/w500/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
+  { id: 337, name: "Disney+", logo: "https://image.tmdb.org/t/p/w500/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg" },
+  { id: 119, name: "Amazon Prime", logo: "https://image.tmdb.org/t/p/w500/emthp39XA2YScoU8t5t7TB38rWO.jpg" },
+  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/w500/cDzkhgvozSr4yGCRPgOlbEbPwze.jpg" }
 ];
 
 const getUserId = () => {
@@ -314,6 +314,7 @@ function App() {
   }
 
   // --- LOBBY AVEC LOGIQUE HÔTE AMÉLIORÉE ---
+  // --- LOBBY AVEC LOGIQUE HÔTE AMÉLIORÉE ---
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
@@ -332,18 +333,18 @@ function App() {
           <>
             {/* VUE HÔTE : CHOIX ENTRE MENU PRINCIPAL OU REGLAGES */}
             {!showHostSettings ? (
-              // 1. Menu Principal du Lobby Hôte (Léger)
+              // 1. Menu Principal du Lobby Hôte
               <div className="host-lobby-menu">
-                <button className="settings-btn" onClick={() => setShowHostSettings(true)}>
-                  ⚙️ Paramètres de la partie
+                <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
+                  Paramètres de la partie
                 </button>
-                <div style={{height: '20px'}}></div>
-                <button className="primary-btn" onClick={startGame}>
-                  LANCER LA PARTIE 🚀
+                <div style={{height: '15px'}}></div>
+                <button className="unified-btn primary" onClick={startGame}>
+                  LANCER LA PARTIE
                 </button>
               </div>
             ) : (
-              // 2. Menu des Réglages (Détaillé)
+              // 2. Menu des Réglages
               <div className="room-settings">
                 <h3>Paramètres</h3>
                 
@@ -381,7 +382,7 @@ function App() {
                   </>
                 ) : (
                   <div className="solo-mode-badge">
-                    🕵️‍♂️ Mode Découverte (Solo)
+                    Mode Découverte (Solo)
                   </div>
                 )}
 
@@ -402,14 +403,14 @@ function App() {
                   </select>
                 </div>
 
-                <button className="btn-back" style={{marginTop: '20px'}} onClick={() => setShowHostSettings(false)}>
-                  ✅ Valider & Retour
+                <button className="unified-btn validate" style={{marginTop: '20px'}} onClick={() => setShowHostSettings(false)}>
+                  Valider et Retour
                 </button>
               </div>
             )}
           </>
         ) : (
-          // VUE INVITÉ (Reste simple)
+          // VUE INVITÉ
           <div className="waiting-box">
             <p className="pulse">En attente de l'hôte...</p>
             <div className="guest-settings-preview">
@@ -426,7 +427,7 @@ function App() {
         
         {/* Le bouton quitter est toujours visible en bas, sauf si on est dans les réglages */}
         {!showHostSettings && (
-          <button className="btn-back" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
+          <button className="unified-btn quit" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
         )}
       </div>
     );
