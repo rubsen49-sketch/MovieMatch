@@ -645,10 +645,11 @@ select:focus {
   -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
 }
 
+/* --- DANS .modal-text --- */
 .modal-text {
   padding: 20px 25px;
-  margin-top: -40px;
-  /* Chevauchement léger sur l'image */
+  margin-top: 0;
+  /* CORRECTION : On remet à 0 pour ne pas chevaucher */
   position: relative;
   z-index: 2;
 }

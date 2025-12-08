@@ -14,10 +14,26 @@ const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
 const PLATFORMS = [
-  { id: 8, name: "Netflix", logo: "https://image.tmdb.org/t/p/w500/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
-  { id: 337, name: "Disney+", logo: "https://image.tmdb.org/t/p/w500/7rwgEs15tFwyR9NPQ5vpzxTj19Q.jpg" },
-  { id: 119, name: "Amazon Prime", logo: "https://image.tmdb.org/t/p/w500/emthp39XA2YScoU8t5t7TB38rWO.jpg" },
-  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/w500/cDzkhgvozSr4yGCRPgOlbEbPwze.jpg" }
+  { 
+    id: 8, 
+    name: "Netflix", 
+    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/e3/96/16/e3961633-4702-862c-805e-85571691255e/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
+  },
+  { 
+    id: 337, 
+    name: "Disney+", 
+    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/95/9b/6c/959b6c00-0b61-9c88-e92b-81d3f2832819/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
+  },
+  { 
+    id: 119, 
+    name: "Amazon Prime", 
+    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple116/v4/0f/5e/52/0f5e5233-0306-69f8-d7b6-c5d012176840/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
+  },
+  { 
+    id: 381, 
+    name: "Canal+", 
+    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/99/53/36/9953363f-272e-333e-6243-556114878546/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
+  }
 ];
 
 const getUserId = () => {
@@ -117,21 +133,26 @@ const MovieDetailModal = ({ movie, onClose }) => {
 };
 
 // ... (MatchItem reste inchangé) ...
-const MatchItem = ({ movieId }) => {
-    const [movieData, setMovieData] = useState(null);
-    useEffect(() => {
-      axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
-        .then(res => setMovieData(res.data))
-        .catch(err => console.error(err));
-    }, [movieId]);
-    if (!movieData) return <div className="mini-card">...</div>;
-    return (
-      <div className="mini-card">
-        <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
-        <h3>{movieData.title}</h3>
-      </div>
-    );
-  };
+// Ajout de la prop 'onClick'
+const MatchItem = ({ movieId, onClick }) => {
+  const [movieData, setMovieData] = useState(null);
+  
+  useEffect(() => {
+    axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
+      .then(res => setMovieData(res.data))
+      .catch(err => console.error(err));
+  }, [movieId]);
+
+  if (!movieData) return <div className="mini-card">...</div>;
+
+  return (
+    // Ajout du onClick sur le conteneur et de la classe clickable
+    <div className="mini-card clickable" onClick={() => onClick(movieData)}>
+      <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
+      <h3>{movieData.title}</h3>
+    </div>
+  );
+};
 
 function App() {
   // ... (États existants inchangés) ...
@@ -377,13 +398,22 @@ function App() {
   if (showMyMatches) {
     return (
       <div className="matches-screen">
+        {renderModal()} {/* IMPORTANT : Ajouter ceci pour afficher le popup si on clique */}
+        
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
         <h2>Mes Matchs</h2>
         {savedMatches.length > 0 && (
           <button onClick={resetMyMatches} className="btn-reset">🗑️ Réinitialiser</button>
         )}
         <div className="matches-grid">
-          {savedMatches.map(id => <MatchItem key={id} movieId={id} />)}
+          {savedMatches.map(id => (
+            <MatchItem 
+              key={id} 
+              movieId={id} 
+              // On passe la fonction pour ouvrir le modal
+              onClick={(movie) => setDetailsMovie(movie)} 
+            />
+          ))}
         </div>
       </div>
     );
