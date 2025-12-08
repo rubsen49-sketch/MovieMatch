@@ -1,20 +1,15 @@
 /* --- 1. GLOBAL & LAYOUT --- */
 :root {
   --primary: #e50914;
-  /* Netflix Red */
   --red: #ff4757;
-  /* Pass Red */
   --gold: #ffb300;
-  /* Match/Like Gold */
   --bg-card: #1e1e1e;
   --text-sub: #a1a1a1;
 }
 
-/* Conteneur principal centré */
 #root {
   width: 100%;
   height: 100vh;
-  /* Force la pleine hauteur */
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -22,21 +17,18 @@
   background-color: #111;
   position: relative;
   overflow: hidden;
-  /* Empêche le scroll global de la page */
 }
 
-/* --- 2. ÉCRANS D'ACCUEIL & LOBBY --- */
+/* --- 2. ACCUEIL & LOBBY (inchangé, juste propre) --- */
 .welcome-screen {
   text-align: center;
   padding: 20px;
   width: 100%;
   max-width: 450px;
-  /* Limite la largeur sur PC */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* Permet le scroll si l'écran est petit (ex: iPhone SE) */
   max-height: 100vh;
   overflow-y: auto;
 }
@@ -45,129 +37,148 @@
   font-size: 2.5rem;
   font-weight: 800;
   color: var(--primary);
-  margin-bottom: 10px;
+  margin-bottom: 20px;
   letter-spacing: -1px;
-}
-
-/* Ajustement pour petits écrans mobiles */
-@media (max-height: 700px) {
-  .welcome-screen h1 {
-    font-size: 2rem;
-  }
-
-  .big-btn {
-    padding: 15px !important;
-  }
 }
 
 /* --- 3. LA CARTE (SWIPE UI) --- */
 .card-container {
-  width: 95%;
-  max-width: 400px;
-  /* Max largeur PC */
-  /* Hauteur dynamique : écran moins l'espace pour les boutons et marges */
-  height: 75vh;
-  max-height: 700px;
+  width: 90%;
+  max-width: 380px;
+  /* Un peu plus étroit pour l'élégance */
+  height: 80vh;
+  /* Prend de la hauteur */
+  max-height: 750px;
   position: relative;
-  perspective: 1000px;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
 }
 
 .movie-card {
   width: 100%;
-  height: 100%;
+  flex-grow: 1;
+  /* Remplit l'espace disponible */
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
   border: 1px solid #333;
   display: flex;
   flex-direction: column;
   cursor: grab;
   position: relative;
+  margin-bottom: 30px;
+  /* ESPACE ICI POUR FAIRE RESPIRER */
 }
 
 .movie-card:active {
   cursor: grabbing;
 }
 
-.movie-poster {
+/* Image poster */
+.poster-wrapper {
+  position: relative;
   width: 100%;
   flex-grow: 1;
-  /* Prend toute la place disponible */
+  overflow: hidden;
+}
+
+.movie-poster {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: center top;
   display: block;
+}
+
+/* BOUTON INFO FLOTTANT (NOUVEAU) */
+.btn-info-floating {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  width: 45px;
+  height: 45px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  color: white;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 20;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  transition: transform 0.2s;
+}
+
+.btn-info-floating:hover {
+  background: white;
+  color: black;
+  transform: scale(1.1);
 }
 
 .movie-info {
   flex-shrink: 0;
-  /* Ne rétrécit pas */
-  padding: 20px;
-  background: linear-gradient(to bottom, #1e1e1e, #000);
+  padding: 25px;
+  background: linear-gradient(to bottom, #1e1e1e, #0d0d0d);
   border-top: 1px solid #333;
+  position: relative;
 }
 
-.movie-header-row {
+.providers-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .movie-info h2 {
-  font-size: 1.4rem;
-  margin: 0 0 5px 0;
+  font-size: 1.6rem;
+  margin: 0 0 8px 0;
   color: white;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  /* Max 2 lignes pour le titre */
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.2;
 }
 
 .movie-desc {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-sub);
   margin: 0;
   display: -webkit-box;
   -webkit-line-clamp: 3;
-  /* Max 3 lignes pour la desc */
   line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-/* --- 4. BOUTONS D'ACTION (SWIPE) --- */
+/* --- 4. BOUTONS D'ACTION (Espacés) --- */
 .actions {
   display: flex;
   justify-content: center;
-  gap: 30px;
-  margin-top: 20px;
-  /* Espace entre la carte et les boutons */
+  gap: 50px;
+  /* BEAUCOUP D'ESPACE ICI */
   width: 100%;
-  max-width: 400px;
+  margin-bottom: 20px;
 }
 
 .btn-circle {
-  width: 65px;
-  height: 65px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
   border: none;
-  font-size: 1.8rem;
+  font-size: 2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s, background 0.2s;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
 
 .btn-circle:hover {
-  transform: scale(1.1);
+  transform: scale(1.15);
 }
 
 .btn-circle:active {
@@ -177,250 +188,106 @@
 .btn-pass {
   background: #2a2a2a;
   color: var(--red);
-  border: 2px solid rgba(255, 71, 87, 0.3);
+  border: 2px solid rgba(255, 71, 87, 0.2);
 }
 
 .btn-like {
   background: #2a2a2a;
   color: var(--gold);
-  border: 2px solid rgba(255, 179, 0, 0.3);
+  border: 2px solid rgba(255, 179, 0, 0.2);
 }
 
-/* --- 5. INPUTS & FORMULAIRES --- */
-.input-group {
+/* --- 5. TUTO SWIPE (NOUVEAU) --- */
+.swipe-tutorial {
+  position: absolute;
+  top: 40%;
+  left: 0;
+  width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 15px;
-  background: var(--bg-card);
-  padding: 30px;
-  border-radius: 20px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  width: 100%;
+  justify-content: space-between;
+  padding: 0 20px;
+  pointer-events: none;
+  /* Ne bloque pas le clic */
+  z-index: 10;
+  opacity: 0.6;
+  animation: fadeOutTuto 5s forwards 2s;
+  /* Disparait après 7s */
 }
 
-input,
-select {
-  width: 100%;
-  padding: 15px;
-  border-radius: 12px;
-  border: 1px solid #333;
-  background: #2a2a2a;
-  color: white;
-  font-size: 1rem;
-  outline: none;
-}
-
-input:focus,
-select:focus {
-  border-color: var(--primary);
-}
-
-/* --- 6. BOUTONS GÉNÉRIQUES --- */
-.unified-btn {
-  width: 100%;
-  padding: 16px;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  transition: filter 0.2s;
-}
-
-.unified-btn:hover {
-  filter: brightness(1.1);
-}
-
-.unified-btn.primary {
-  background: var(--primary);
-  color: white;
-}
-
-.unified-btn.secondary {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-}
-
-.unified-btn.validate {
-  background: var(--gold);
-  color: #111;
-}
-
-.unified-btn.quit {
-  background: transparent;
-  border: 1px solid #444;
-  color: #888;
-  padding: 12px;
-}
-
-.big-btn {
-  padding: 20px;
-  border-radius: 15px;
-  border: none;
-  font-size: 1.2rem;
-  font-weight: bold;
-  cursor: pointer;
-  width: 100%;
-  margin-bottom: 15px;
-}
-
-.btn-create {
-  background: var(--primary);
-  color: white;
-}
-
-.btn-join {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-}
-
-/* --- 7. ÉCRAN MATCHS (GRILLE RESPONSIVE) --- */
-.matches-screen {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-  overflow-y: auto;
-  text-align: center;
-  max-width: 1200px;
-  /* Limite sur grand écran */
-}
-
-.matches-grid {
-  display: grid;
-  gap: 15px;
-  margin-top: 20px;
-  padding-bottom: 50px;
-  /* MOBILE PAR DÉFAUT : 2 colonnes */
-  grid-template-columns: repeat(2, 1fr);
-}
-
-/* RESPONSIVE : TABLETTE & DESKTOP */
-@media (min-width: 600px) {
-  .matches-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (min-width: 900px) {
-  .matches-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-.mini-card {
-  background: #222;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  cursor: pointer;
-  transition: transform 0.2s;
-}
-
-.mini-card:hover {
-  transform: translateY(-5px);
-}
-
-.mini-card img {
-  width: 100%;
-  aspect-ratio: 2/3;
-  object-fit: cover;
-}
-
-.mini-card h3 {
-  font-size: 0.9rem;
-  margin: 10px;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 5px;
-}
-
-/* --- 8. OVERLAYS & MODALES --- */
-.match-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.95);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  text-align: center;
-  padding: 20px;
-}
-
-.match-title {
+.tuto-hand {
   font-size: 3rem;
-  color: var(--gold);
-  font-weight: 900;
+  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));
+  animation: swipeAnim 2s infinite ease-in-out;
+}
+
+@keyframes swipeAnim {
+
+  0%,
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+
+  50% {
+    transform: translateX(20px) rotate(10deg);
+  }
+}
+
+@keyframes fadeOutTuto {
+  to {
+    opacity: 0;
+  }
+}
+
+.swipe-hint-text {
+  text-align: center;
+  color: #666;
+  font-size: 0.8rem;
+  margin-top: 10px;
   text-transform: uppercase;
-  margin-bottom: 10px;
-  text-shadow: 0 0 20px rgba(255, 179, 0, 0.5);
+  letter-spacing: 1px;
 }
 
-.match-poster {
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  margin: 20px 0;
-  max-height: 40vh;
-  /* S'adapte à la hauteur de l'écran */
-  width: auto;
-}
+/* --- RESTE DES STYLES (Modale, Matchs, etc.) --- */
+/* (Garde le code précédent pour .match-overlay, .modal-backdrop, .unified-btn, .input-group...) */
+/* Je te remets les essentiels ici pour être sûr */
 
-/* MODALE DETAILS (Responsive) */
 .modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(5px);
   z-index: 10000;
   display: flex;
-  /* MOBILE : Alignement en bas (Slide up) */
   align-items: flex-end;
   justify-content: center;
+}
+
+@media(min-width: 768px) {
+  .modal-backdrop {
+    align-items: center;
+  }
 }
 
 .modal-content {
   background: #1a1a1a;
   width: 100%;
-  /* MOBILE : Quasi plein écran mais arrondi en haut */
   height: 85vh;
   border-top-left-radius: 20px;
   border-top-right-radius: 20px;
   overflow-y: auto;
-  position: relative;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
   border-top: 1px solid #333;
-  animation: slideUp 0.3s ease-out;
+  animation: slideUp 0.3s;
 }
 
-/* DESKTOP : Modale centrée et flottante */
-@media (min-width: 768px) {
-  .modal-backdrop {
-    align-items: center;
-    /* Centré verticalement */
-  }
-
+@media(min-width: 768px) {
   .modal-content {
     max-width: 700px;
     height: auto;
     max-height: 90vh;
     border-radius: 20px;
-    /* Arrondi partout */
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
-    animation: fadeInScale 0.2s ease-out;
   }
 }
 
-/* --- ANIMATIONS --- */
 @keyframes slideUp {
   from {
     transform: translateY(100%);
@@ -431,19 +298,62 @@ select:focus {
   }
 }
 
-@keyframes fadeInScale {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 2rem;
+  z-index: 10;
+  cursor: pointer;
 }
 
-/* --- UTILITAIRES --- */
+/* Utilitaire Video/Banner */
+.video-responsive {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  background: black;
+}
+
+.video-responsive iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.modal-banner {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+}
+
+.modal-info {
+  padding: 20px;
+}
+
+.btn-quit {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #555;
+  color: white;
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 100;
+}
+
+/* Code Room */
 .room-code-display {
   background: #222;
   border: 2px dashed #555;
@@ -456,149 +366,61 @@ select:focus {
 
 .code-text {
   font-size: 2.5rem;
-  font-weight: 900;
   color: var(--gold);
   font-family: monospace;
-  margin: 0;
 }
 
+/* Provider Chips */
 .providers-select {
   display: flex;
-  gap: 15px;
+  gap: 10px;
   justify-content: center;
-  flex-wrap: wrap;
-  /* Revient à la ligne si pas de place */
   margin-bottom: 15px;
 }
 
 .provider-chip {
-  width: 55px;
-  height: 55px;
-  border-radius: 12px;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
   border: 2px solid #333;
-  opacity: 0.5;
-  cursor: pointer;
-  transition: all 0.2s;
   overflow: hidden;
+  opacity: 0.5;
+  transition: 0.2s;
 }
 
 .provider-chip.selected {
   border-color: var(--gold);
   opacity: 1;
-  transform: scale(1.15);
-  box-shadow: 0 0 15px rgba(255, 179, 0, 0.3);
+  transform: scale(1.1);
 }
 
 .provider-chip img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: grayscale(100%);
 }
 
-.provider-chip.selected img {
-  filter: none;
-}
-
-.btn-info-small {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: white;
-  width: 35px;
-  height: 35px;
-  border-radius: 50%;
-  font-size: 1.2rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.btn-info-small:hover {
-  background: white;
-  color: black;
-  transform: scale(1.1);
-}
-
-/* Video Wrapper */
-.video-responsive {
-  overflow: hidden;
-  padding-bottom: 56.25%;
-  position: relative;
-  height: 0;
-  background: black;
-}
-
-.video-responsive iframe {
-  left: 0;
-  top: 0;
-  height: 100%;
+/* Grille Matchs */
+.matches-screen {
   width: 100%;
-  position: absolute;
-}
-
-/* Styles pour le contenu de la modale */
-.modal-banner {
-  width: 100%;
-  height: 250px;
-  object-fit: cover;
-  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
-}
-
-.modal-info {
   padding: 20px;
+  overflow-y: auto;
 }
 
-.modal-close {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(0, 0, 0, 0.5);
-  border: none;
-  color: white;
-  font-size: 2rem;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-meta {
-  display: flex;
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 15px;
-  margin-bottom: 20px;
-  font-size: 1rem;
-  color: #bbb;
+  margin-top: 20px;
 }
 
-.rating {
-  color: var(--gold);
-  font-weight: bold;
+@media(min-width: 600px) {
+  .matches-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
-.modal-synopsis {
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #ddd;
-  margin-bottom: 25px;
-  text-align: left;
-}
-
-.btn-quit {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 15px;
-  border-radius: 20px;
-  cursor: pointer;
-  z-index: 100;
-  font-size: 0.8rem;
+.mini-card img {
+  width: 100%;
+  border-radius: 10px;
 }

@@ -539,37 +539,55 @@ function App() {
     <div className="card-container">
       {renderModal()}
       <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
+      {/* ... le début du fichier reste identique ... */}
+      
       <motion.div 
         className="movie-card"
         drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
         style={{ x, rotate, opacity }}
         initial={{ scale: 0.8 }} animate={{ scale: 1 }}
       >
-        <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+        {/* NOUVEAU WRAPPER POUR L'IMAGE ET LE BOUTON */}
+        <div className="poster-wrapper">
+          <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+          
+          {/* BOUTON INFO FLOTTANT BIEN VISIBLE */}
+          <button className="btn-info-floating" onClick={(e) => {
+             e.stopPropagation();
+             openMovieDetails(movie.id);
+          }}>
+            ℹ️
+          </button>
+
+          {/* TUTORIEL QUI DISPARAIT APRES QUELQUES SECONDES (OPTIONNEL) */}
+          {currentIndex === 0 && (
+             <div className="swipe-tutorial">
+               <span className="tuto-hand" style={{transform: 'scaleX(-1)'}}>👈</span>
+               <span className="tuto-hand">👉</span>
+             </div>
+          )}
+        </div>
+
         <div className="movie-info">
-          <div className="movie-header-row">
-            <div className="providers-container">
-              {providersDisplay.map((p) => (
-                <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
-              ))}
-            </div>
-            {/* PETIT BOUTON INFO */}
-            <button className="btn-info-small" onClick={(e) => {
-              e.stopPropagation(); // Evite de déclencher d'autres clics
-              openMovieDetails(movie.id);
-            }}>
-              ℹ️
-            </button>
+          <div className="providers-container">
+            {providersDisplay.map((p) => (
+              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
+            ))}
           </div>
 
           <h2>{movie.title}</h2>
           <p className="movie-desc">{movie.overview}</p>
         </div>
-        <div className="actions">
-          <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
-          <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
-        </div>
       </motion.div>
+
+      <div className="actions">
+        <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
+        <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
+      </div>
+      
+      {/* Petit texte d'aide discret en bas */}
+      <p className="swipe-hint-text">Glisse la carte ou utilise les boutons</p>
+
       <Analytics />
     </div>
   );
