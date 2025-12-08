@@ -1,45 +1,4 @@
-/* RESET & GLOBAL */
-:root {
-  --bg-app: #111111;
-  --bg-card: #1e1e1e;
-  --text-main: #ffffff;
-  --text-sub: #a1a1a1;
-  --primary: #e50914;
-  --green: #ff6b81;
-  /* Rose Corail */
-  --red: #ff4757;
-  --gradient-sunset: linear-gradient(135deg, #ff9966 0%, #ff5e62 100%);
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-app);
-  color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
-  /* Pas de scroll global */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#root {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-/* --- 1. ÉCRAN D'ACCUEIL --- */
+/* --- 1. LAYOUTS & ECRANS --- */
 .welcome-screen {
   text-align: center;
   padding: 20px;
@@ -55,6 +14,23 @@ body {
   letter-spacing: -1px;
 }
 
+.matches-screen {
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.card-container {
+  width: 90%;
+  max-width: 360px;
+  height: 650px;
+  position: relative;
+  perspective: 1000px;
+}
+
+/* --- 2. INPUTS & FORMULAIRES --- */
 .input-group {
   display: flex;
   flex-direction: column;
@@ -83,284 +59,61 @@ select:focus {
   border-color: var(--primary);
 }
 
-button.primary-btn {
-  padding: 16px;
+/* --- 3. BOUTONS (Unifier les styles) --- */
+/* Bouton générique pour l'UI */
+.unified-btn {
+  width: 100%;
+  padding: 18px;
   border-radius: 12px;
-  border: none;
-  background: var(--primary);
-  color: white;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
-  transition: transform 0.1s;
+  border: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.1s, filter 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-button.primary-btn:active {
+.unified-btn:active {
   transform: scale(0.98);
 }
 
-/* 2. LA CARTE DU FILM (Version Flexbox Intelligent) */
-.card-container {
-  width: 90%;
-  max-width: 360px;
-  height: 650px;
-  /* Hauteur totale fixe */
-  position: relative;
-  perspective: 1000px;
+.unified-btn:hover {
+  filter: brightness(1.1);
 }
 
-.movie-card {
-  width: 100%;
-  height: 100%;
-  background: var(--bg-card);
-  border-radius: 24px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
-  border: 1px solid #333;
-
-  /* C'est ici que la magie opère 👇 */
-  display: flex;
-  flex-direction: column;
-}
-
-/* L'IMAGE : Prend tout l'espace DISPONIBLE */
-.movie-poster {
-  width: 100%;
-  flex-grow: 1;
-  /* L'image grandit pour remplir le vide */
-  flex-shrink: 1;
-  /* L'image accepte de rétrécir si le texte prend de la place */
-  min-height: 0;
-  /* Indispensable pour que le rétrécissement marche */
-  object-fit: cover;
-  object-position: top center;
-  display: block;
-}
-
-/* LES INFOS : Prennent juste la place nécessaire */
-.movie-info {
-  flex-shrink: 0;
-  /* Interdit d'écraser le texte, il reste prioritaire */
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  /* Colle le contenu vers le bas */
-  background: linear-gradient(to bottom, var(--bg-card), #161616);
-
-  /* Optionnel : Une petite ombre portée vers le haut pour séparer de l'image */
-  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.2);
-}
-
-.text-content h2 {
-  font-size: 1.4rem;
-  margin: 0 0 10px 0;
-  /* Un peu plus d'espace */
-  line-height: 1.2;
+/* Variantes de couleurs */
+.unified-btn.primary {
+  background: var(--primary);
   color: white;
-
-  /* Sécurité Titre */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
 }
 
-.movie-desc {
-  font-size: 0.9rem;
-  color: var(--text-sub);
-  margin: 0 0 15px 0;
-  /* Marge avant les boutons */
-
-  /* Sécurité Description */
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* LES BOUTONS (Restent fixes) */
-.actions {
-  display: flex;
-  justify-content: center;
-  gap: 25px;
-  padding-top: 5px;
-  /* Petit espace de respiration */
-}
-
-.btn-circle {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform 0.2s, background 0.2s;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-}
-
-.btn-circle:hover {
-  transform: scale(1.1);
-}
-
-.btn-pass {
-  background: #2a2a2a;
-  color: var(--red);
-  border: 2px solid rgba(255, 71, 87, 0.2);
-}
-
-.btn-like {
-  background: #2a2a2a;
-  color: var(--green);
-  border: 2px solid rgba(46, 204, 113, 0.2);
-}
-
-/* --- 3. POPUP MATCH --- */
-.match-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.92);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-  text-align: center;
-  animation: fadeIn 0.3s;
-}
-
-.match-title {
-  font-size: 3.5rem;
-  color: var(--green);
-  font-weight: 900;
-  text-transform: uppercase;
-  margin-bottom: 0;
-  text-shadow: 0 0 20px rgba(46, 204, 113, 0.5);
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.9);
-  }
-
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-/* --- LOGOS STREAMING --- */
-.providers-container {
-  display: flex;
-  gap: 10px;
-  /* Espace entre les logos */
-  margin-bottom: 10px;
-  /* Espace avant le titre */
-  height: 35px;
-  /* Hauteur fixe pour ne pas faire sauter le texte */
-  align-items: center;
-}
-
-.provider-logo {
-  width: 35px;
-  height: 35px;
-  border-radius: 8px;
-  /* Coins arrondis comme sur iOS */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-
-/* Empêche de sélectionner le texte quand on swipe */
-.movie-card {
-  user-select: none;
-  cursor: grab;
-  /* Curseur "main ouverte" */
-}
-
-.movie-card:active {
-  cursor: grabbing;
-  /* Curseur "main fermée" quand on attrape */
-}
-/* --- PAGE MES MATCHS --- */
-.matches-screen {
-  width: 100%;
-  height: 100%;
-  padding: 20px;
-  overflow-y: auto;
-  /* Permet de scroller si tu as plein de matchs */
-  text-align: center;
-}
-
-.matches-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  /* 2 colonnes */
-  gap: 15px;
-  margin-top: 20px;
-  padding-bottom: 50px;
-}
-
-.mini-card {
-  background: #222;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  position: relative;
-}
-
-.mini-card img {
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-}
-
-.mini-card h3 {
-  font-size: 0.9rem;
-  margin: 10px;
-  color: white;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* Met "..." si le titre est trop long */
-}
-
-.btn-back {
+.unified-btn.secondary {
   background: #333;
   color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 20px;
-  margin-bottom: 20px;
-  cursor: pointer;
-  font-weight: bold;
-}
-/* Bouton Quitter (Petit et discret en haut à gauche) */
-.btn-quit {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: rgba(0, 0, 0, 0.5);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 15px;
-  border-radius: 20px;
-  cursor: pointer;
-  z-index: 100;
-  /* Pour passer au dessus de la carte */
-  font-size: 0.8rem;
-  transition: background 0.2s;
+  border: 1px solid #555;
 }
 
-.btn-quit:hover {
-  background: var(--primary);
-  border-color: var(--primary);
+/* CHANGEMENT ICI : Le bouton valider devient OR */
+.unified-btn.validate {
+  background: var(--gold);
+  color: #111;
+  box-shadow: 0 4px 15px rgba(255, 179, 0, 0.4);
 }
-/* --- NOUVEAU MENU D'ACCUEIL --- */
+
+.unified-btn.quit {
+  background: transparent;
+  border: 1px solid #444;
+  color: #888;
+  font-size: 0.9rem;
+  padding: 12px;
+}
+
+/* Gros boutons du menu accueil */
 .menu-buttons {
   display: flex;
   flex-direction: column;
@@ -398,8 +151,176 @@ button.primary-btn:active {
   border: 1px solid #555;
 }
 
-/* --- ÉCRAN CRÉATION (Le Code) --- */
-/* Modification : La zone devient un gros bouton interactif */
+/* Petits boutons utilitaires */
+.btn-back {
+  background: #333;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin-bottom: 20px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.btn-quit {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 15px;
+  border-radius: 20px;
+  cursor: pointer;
+  z-index: 100;
+  font-size: 0.8rem;
+  transition: background 0.2s;
+}
+
+.btn-quit:hover {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-reset {
+  background: #333;
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 8px 15px;
+  border-radius: 20px;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.link-matches {
+  margin-top: 20px;
+  background: transparent;
+  border: none;
+  color: #888;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- 4. LA CARTE (SWIPE UI) --- */
+.movie-card {
+  width: 100%;
+  height: 100%;
+  background: var(--bg-card);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  border: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+  cursor: grab;
+}
+
+.movie-card:active {
+  cursor: grabbing;
+}
+
+.movie-poster {
+  width: 100%;
+  flex-grow: 1;
+  flex-shrink: 1;
+  min-height: 0;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+.movie-info {
+  flex-shrink: 0;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(to bottom, var(--bg-card), #161616);
+  box-shadow: 0 -10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.movie-info h2 {
+  font-size: 1.4rem;
+  margin: 0 0 10px 0;
+  line-height: 1.2;
+  color: white;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.movie-desc {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  margin: 0 0 15px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Boutons d'action (Rond) */
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  padding-top: 5px;
+}
+
+.btn-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.btn-circle:hover {
+  transform: scale(1.1);
+}
+
+/* Pass reste Rouge */
+.btn-pass {
+  background: #2a2a2a;
+  color: var(--red);
+  border: 2px solid rgba(255, 71, 87, 0.2);
+}
+
+/* CHANGEMENT ICI : Like devient OR */
+.btn-like {
+  background: #2a2a2a;
+  color: var(--gold);
+  border: 2px solid rgba(255, 179, 0, 0.2);
+}
+
+/* Logos Providers sur la carte */
+.providers-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  height: 35px;
+  align-items: center;
+}
+
+.provider-logo {
+  width: 35px;
+  height: 35px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* --- 5. LOBBY & REGLAGES --- */
 .room-code-display {
   background: #222;
   border: 2px dashed #555;
@@ -407,39 +328,28 @@ button.primary-btn:active {
   border-radius: 15px;
   margin: 20px 0;
   cursor: pointer;
-  /* Affiche la main pour dire "clique-moi" */
   transition: all 0.2s ease;
-  position: relative;
-  /* Pour positionner une info-bulle si besoin */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-/* Effet au survol (PC) */
-.room-code-display:hover {
-  background: #2a2a2a;
-  border-color: var(--primary);
-  transform: scale(1.02);
-}
-
-/* Effet au clic (Mobile & PC) */
 .room-code-display:active {
   transform: scale(0.95);
   background: #1a1a1a;
 }
 
+/* CHANGEMENT ICI : Le code devient OR */
 .code-text {
   font-size: 2.5rem;
   font-weight: 900;
-  color: var(--green);
+  color: var(--gold);
   letter-spacing: 5px;
   margin: 0;
   font-family: monospace;
 }
 
-/* Petit texte "Cliquer pour copier" qui apparaît en dessous */
 .click-hint {
   font-size: 0.8rem;
   color: #666;
@@ -448,31 +358,14 @@ button.primary-btn:active {
   letter-spacing: 1px;
 }
 
-/* --- PARAMÈTRES AVEC SCROLL --- */
 .room-settings {
   display: flex;
   flex-direction: column;
   gap: 15px;
   text-align: left;
-
-  /* Gestion du Scroll */
   max-height: 60vh;
-  /* Limite la hauteur à 60% de l'écran */
   overflow-y: auto;
-  /* Active le scroll vertical si nécessaire */
   padding-right: 5px;
-  /* Petit espace pour éviter que le texte touche le bord */
-
-  /* Cacher la barre de scroll (Chrome, Safari, Opera) */
-  scrollbar-width: none;
-  /* Firefox */
-  -ms-overflow-style: none;
-  /* IE/Edge */
-}
-
-/* Cacher la barre de scroll (Chrome, Safari, Opera) */
-.room-settings::-webkit-scrollbar {
-  display: none;
 }
 
 .room-settings label {
@@ -480,28 +373,8 @@ button.primary-btn:active {
   font-size: 0.9rem;
   margin-left: 5px;
 }
-.pulse {
-  animation: pulse-animation 1.5s infinite ease-in-out;
-  font-weight: bold;
-  color: var(--text-sub);
-}
 
-@keyframes pulse-animation {
-  0% {
-    opacity: 0.5;
-  }
-
-  50% {
-    opacity: 1;
-  }
-
-  100% {
-    opacity: 0.5;
-  }
-}
-/* --- NOUVEAU CSS POUR LES REGLAGES --- */
-
-/* Sélecteur de Plateformes */
+/* Providers Chips (Settings) */
 .providers-select {
   display: flex;
   gap: 10px;
@@ -509,41 +382,33 @@ button.primary-btn:active {
   margin-bottom: 15px;
 }
 
-/* --- LOGOS PLATEFORMES (Transparent) --- */
 .provider-chip {
-  background-color: transparent;
-  /* 👈 Plus de fond blanc ! */
+  background-color: white;
   width: 50px;
   height: 50px;
   border-radius: 12px;
-  overflow: hidden;
-  border: 2px solid #333;
-  /* Bordure sombre par défaut */
-  opacity: 0.5;
+  border: 3px solid transparent;
+  opacity: 0.6;
   cursor: pointer;
   transition: all 0.2s;
-  padding: 0;
+  padding: 2px;
 }
 
+/* CHANGEMENT ICI : Sélection en OR */
 .provider-chip.selected {
-  border-color: var(--green);
-  /* Devient Rose/Corail */
+  border-color: var(--gold);
   opacity: 1;
-  filter: none;
   transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(255, 107, 129, 0.4);
-  /* Lueur Rose */
+  box-shadow: 0 0 15px rgba(255, 179, 0, 0.4);
 }
 
 .provider-chip img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  /* Remplit bien la case */
-  border-radius: 10px;
+  object-fit: contain;
+  display: block;
 }
 
-/* Sélecteur Mode de Vote */
 .vote-mode-selector {
   display: flex;
   gap: 10px;
@@ -571,21 +436,16 @@ button.primary-btn:active {
   gap: 10px;
 }
 
-.match-poster {
-  border-radius: 15px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  margin: 20px 0;
-  max-height: 300px;
-}
-
-.btn-reset {
-  background: #333;
-  color: #ff4757;
-  border: 1px solid #ff4757;
-  padding: 8px 15px;
-  border-radius: 20px;
+/* CHANGEMENT ICI : Badge solo en OR */
+.solo-mode-badge {
+  background: rgba(255, 179, 0, 0.1);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  padding: 10px;
+  border-radius: 8px;
   margin-bottom: 15px;
-  cursor: pointer;
+  font-weight: bold;
+  text-align: center;
 }
 
 .waiting-box {
@@ -602,225 +462,97 @@ button.primary-btn:active {
   padding-top: 10px;
 }
 
-.link-matches {
-  margin-top: 20px;
-  background: transparent;
-  border: none;
-  color: #888;
-  text-decoration: underline;
-  cursor: pointer;
-}
-/* --- CSS POUR LE NOUVEAU LOBBY --- */
-
-.settings-btn {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-  padding: 15px;
-  width: 100%;
-  border-radius: 12px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  transition: background 0.2s;
-}
-
-.settings-btn:hover {
-  background: #444;
-}
-
-.solo-mode-badge {
-  background: rgba(46, 204, 113, 0.1);
-  color: var(--green);
-  border: 1px solid var(--green);
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-weight: bold;
-}
-/* --- BOUTONS UNIFORMES --- */
-.host-lobby-menu, .room-settings {
-  width: 100%;
+/* --- 6. OVERLAYS & MATCHS --- */
+.match-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
   display: flex;
   flex-direction: column;
-}
-
-.unified-btn {
-  width: 100%; /* Prend toute la largeur disponible */
-  padding: 18px; /* Hauteur uniforme */
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  display: flex;
   justify-content: center;
   align-items: center;
-  transition: transform 0.1s, background 0.2s;
-  text-transform: uppercase; /* Optionnel : rend le texte plus net */
-  letter-spacing: 0.5px;
+  z-index: 9999;
+  text-align: center;
+  animation: fadeIn 0.3s;
 }
 
-.unified-btn:active {
-  transform: scale(0.98);
-}
-
-/* Couleurs spécifiques selon le type de bouton */
-.unified-btn.primary {
-  background: var(--primary); /* Rouge Netflix */
-  color: white;
-  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
-}
-
-.unified-btn.secondary {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-}
-
-.unified-btn.validate {
-  background: var(--green);
-  color: white;
-  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-}
-
-.unified-btn.quit {
-  background: transparent;
-  border: 1px solid #444;
-  color: #888;
-  font-size: 0.9rem;
-  padding: 12px; /* Un tout petit peu plus fin pour le bouton quitter */
-}
-
-.unified-btn:hover {
-  filter: brightness(1.1);
-}
-
-/* --- CORRECTION LOGOS PLATEFORMES --- */
-.provider-chip {
-  background-color: white; /* Fond blanc pour voir les logos même s'ils sont sombres */
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
-  overflow: hidden;
-  border: 3px solid transparent; /* Bordure transparente par défaut */
-  opacity: 0.6; /* Un peu grisé quand pas sélectionné */
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 2px; /* Petit espace blanc autour du logo */
-}
-
-.provider-chip.selected {
-  border-color: var(--green);
-  opacity: 1;
-  filter: none;
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
-}
-
-.provider-chip img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* Assure que le logo entier est visible */
-  display: block;
-}
-/* --- BOUTONS UNIFORMES --- */
-.host-lobby-menu,
-.room-settings {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.unified-btn {
-  width: 100%;
-  /* Prend toute la largeur disponible */
-  padding: 18px;
-  /* Hauteur uniforme */
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  transition: transform 0.1s, background 0.2s;
+/* CHANGEMENT ICI : Titre MATCH en OR */
+.match-title {
+  font-size: 3.5rem;
+  color: var(--gold);
+  font-weight: 900;
   text-transform: uppercase;
-  /* Optionnel : rend le texte plus net */
-  letter-spacing: 0.5px;
+  margin-bottom: 0;
+  text-shadow: 0 0 20px rgba(255, 179, 0, 0.5);
 }
 
-.unified-btn:active {
-  transform: scale(0.98);
+.match-poster {
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  margin: 20px 0;
+  max-height: 300px;
 }
 
-/* Couleurs spécifiques selon le type de bouton */
-.unified-btn.primary {
-  background: var(--primary);
-  /* Rouge Netflix */
-  color: white;
-  box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+.matches-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+  padding-bottom: 50px;
 }
 
-.unified-btn.secondary {
-  background: #333;
-  color: white;
-  border: 1px solid #555;
-}
-
-.unified-btn.validate {
-  background: var(--green);
-  color: white;
-  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4);
-}
-
-.unified-btn.quit {
-  background: transparent;
-  border: 1px solid #444;
-  color: #888;
-  font-size: 0.9rem;
-  padding: 12px;
-  /* Un tout petit peu plus fin pour le bouton quitter */
-}
-
-.unified-btn:hover {
-  filter: brightness(1.1);
-}
-
-/* --- CORRECTION LOGOS PLATEFORMES --- */
-.provider-chip {
-  background-color: white;
-  /* Fond blanc pour voir les logos même s'ils sont sombres */
-  width: 50px;
-  height: 50px;
-  border-radius: 12px;
+.mini-card {
+  background: #222;
+  border-radius: 10px;
   overflow: hidden;
-  border: 3px solid transparent;
-  /* Bordure transparente par défaut */
-  opacity: 0.6;
-  /* Un peu grisé quand pas sélectionné */
-  cursor: pointer;
-  transition: all 0.2s;
-  padding: 2px;
-  /* Petit espace blanc autour du logo */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  position: relative;
 }
 
-.provider-chip.selected {
-  border-color: var(--green);
-  opacity: 1;
-  filter: none;
-  transform: scale(1.1);
-  box-shadow: 0 0 15px rgba(46, 204, 113, 0.4);
-}
-
-.provider-chip img {
+.mini-card img {
   width: 100%;
-  height: 100%;
-  object-fit: contain;
-  /* Assure que le logo entier est visible */
-  display: block;
+  height: 200px;
+  object-fit: cover;
+}
+
+.mini-card h3 {
+  font-size: 0.9rem;
+  margin: 10px;
+  color: white;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* --- 7. ANIMATIONS --- */
+.pulse {
+  animation: pulse-animation 1.5s infinite ease-in-out;
+  font-weight: bold;
+  color: var(--text-sub);
+}
+
+@keyframes pulse-animation {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }

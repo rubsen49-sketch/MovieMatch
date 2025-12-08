@@ -1,16 +1,54 @@
-/* RESET MINIMAL */
 :root {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  background-color: #111111;
-  /* On force le noir profond dès le début */
-  color: white;
+  /* Palette de couleurs centralisée */
+  --bg-app: #111111;
+  --bg-card: #1e1e1e;
+  --text-main: #ffffff;
+  --text-sub: #a1a1a1;
+
+  /* NOS COULEURS PRINCIPALES */
+  --primary: #e50914;
+  /* Netflix Red (Marque) */
+  --red: #ff4757;
+  /* Rouge vif (Pass/Refuser) */
+  --gold: #ffb300;
+  /* OR / AMBRE (Like/Match/Valider) - Remplace le vert */
+
+  --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   padding: 0;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: var(--font-main);
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  /* On gère le scroll dans l'app, pas sur le body */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* Scrollbar invisible mais fonctionnelle */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
