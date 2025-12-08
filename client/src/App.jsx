@@ -65,16 +65,25 @@ function App() {
   // --- FONCTIONS LOGIQUES ---
 
   // Refonte de la fonction rejoindre pour accepter un argument optionnel
+  // Fonction intelligente pour rejoindre
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
+    
     if (targetRoom !== "") {
-      if (isHost || roomCodeToJoin) { // Si c'est l'hôte ou une création directe
+      // --- MAGIE ALÉATOIRE SYNCHRONISÉE ---
+      // On transforme le code (ex: "ABC") en nombre pour choisir une page entre 1 et 30
+      // Comme le code est le même pour tout le monde, la page sera la même pour tout le monde !
+      const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const randomPage = (seed % 30) + 1; // Page au hasard entre 1 et 30
+      setPage(randomPage);
+      // ------------------------------------
+
+      if (isHost || roomCodeToJoin) { 
         socket.emit("create_room", targetRoom);
         setIsInRoom(true);
         setGameStarted(false);
         setView("lobby");
       } else {
-        // L'invité REJOINT (avec vérification serveur)
         socket.emit("join_room", targetRoom, (response) => {
           if (response.status === "ok") {
             setIsInRoom(true);
@@ -142,6 +151,9 @@ function App() {
     socket.on("settings_update", (data) => {
       setSelectedGenre(data.genre);
       setMinRating(data.rating);
+      // Si on change les réglages, on remet la page à 1 ou on garde l'aléatoire ?
+      // Pour assurer le coup, on repart à la page 1 du nouveau genre
+      setPage(1); 
     });
 
     socket.on("game_started", () => {
@@ -291,7 +303,7 @@ function App() {
         <h1>Salle d'attente</h1>
         
         <div 
-          className="room-code-display" 
+          className="-display" 
           onClick={shareCode}
           title="Toucher pour partager"
         >
