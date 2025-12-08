@@ -17,7 +17,7 @@ const PLATFORMS = [
   { id: 8, name: "Netflix", logo: "https://media.themoviedb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
   { id: 337, name: "Disney+", logo: "https://media.themoviedb.org/t/p/original/97yvRBw1GzX7fXprcF80er19ot.jpg" },
   { id: 119, name: "Amazon Prime", logo: "https://media.themoviedb.org/t/p/original/pvske1MyAoymrs5bguRfVqYiM9a.jpg" }, // Lien corrigé
-  { id: 381, name: "Canal+", logo: "https://media.themoviedb.org/t/p/original/geOzgeKZWpZC3lymAVEHVIk3X0q.jpg" } // Lien corrigé
+  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/geOzgeKZWpZC3lymAVEHVIk3X0q.jpg" } // Lien corrigé
 ];
 
 const getUserId = () => {
@@ -558,7 +558,7 @@ function App() {
         {view === "join" && (
           <div className="input-group">
             <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
-            <button className="btn-back btn-create" onClick={() => joinLobby(null)}>Valider</button>
+            <button className="primary-btn" onClick={() => joinLobby(null)}>Valider</button>
             <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
           </div>
         )}
