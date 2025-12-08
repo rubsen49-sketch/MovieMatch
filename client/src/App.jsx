@@ -209,7 +209,7 @@ function App() {
     return (
       <div className="matches-screen">
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>⬅ Retour</button>
-        <h2>🏆 Mes Trophées</h2>
+        <h2>🏆 Mes Matchs</h2>
         <div className="matches-grid">
           {savedMatches.map(id => <MatchItem key={id} movieId={id} />)}
         </div>
@@ -232,7 +232,7 @@ function App() {
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
-        <h1>Salle d'attente ⏳</h1>
+        <h1>Movie Match</h1>
         
         <div 
           className="room-code-display" 
@@ -280,7 +280,7 @@ function App() {
         {/* BOUTON START : SEULEMENT POUR L'HÔTE */}
         {isHost ? (
           <button className="primary-btn" style={{marginTop: '30px'}} onClick={startGame}>
-            🚀 LANCER LA PARTIE
+            LANCER LA PARTIE
           </button>
         ) : (
           <div style={{marginTop: '30px', padding: '15px', background: '#333', borderRadius: '10px'}}>
@@ -301,9 +301,9 @@ function App() {
 
         {view === "menu" && (
           <div className="menu-buttons">
-            <button className="big-btn btn-create" onClick={generateRoomCode}>✨ Créer une salle</button>
-            <button className="big-btn btn-join" onClick={() => setView("join")}>🚀 Rejoindre</button>
-            <button onClick={() => setShowMyMatches(true)} style={{marginTop: '20px', background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline'}}>Voir mes trophées 🏆</button>
+            <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
+            <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
+            <button onClick={() => setShowMyMatches(true)} style={{marginTop: '20px', background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline'}}>Voir mes matchs</button>
           </div>
         )}
 
