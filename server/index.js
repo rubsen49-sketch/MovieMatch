@@ -15,65 +15,105 @@ const io = new Server(server, {
   },
 });
 
-// Mémoire des likes : { "CODE_SALLE": { "ID_FILM": ["socket_id_1", "socket_id_2"] } }
+// Mémoire des likes
 const roomLikes = {};
 
 io.on("connection", (socket) => {
   console.log(`User Connected: ${socket.id}`);
 
-  // 1. CRÉATION
+  // 1. CRÉATION DE SALLE
   socket.on("create_room", (room) => {
-    socket.join(room);
-    // On nettoie les anciens likes de cette salle si elle est recréée
-    roomLikes[room] = {}; 
-    io.to(room).emit("player_count_update", 1);
-  });
-
-  // 2. REJOINDRE
-  socket.on("join_room", (room, callback) => {
-    const roomExists = io.sockets.adapter.rooms.has(room);
-    if (roomExists) {
+    try {
       socket.join(room);
-      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
-      io.to(room).emit("player_count_update", roomSize);
-      callback({ status: "ok" });
-    } else {
-      callback({ status: "error" });
+      roomLikes[room] = {}; 
+      console.log(`Room created: ${room}`);
+      io.to(room).emit("player_count_update", 1);
+    } catch (error) {
+      console.error("Erreur create_room:", error);
     }
   });
 
-  // 3. SWIPE (C'est là qu'on corrige le bug !)
-  // 3. SWIPE
-  socket.on("swipe_right", (data) => {
-    const { room, movieId, userId } = data; // On récupère l'userId
+  // 2. REJOINDRE UNE SALLE
+  socket.on("join_room", (room, callback) => {
+    try {
+      const roomExists = io.sockets.adapter.rooms.has(room);
 
-    if (!roomLikes[room]) roomLikes[room] = {};
-    if (!roomLikes[room][movieId]) roomLikes[room][movieId] = new Set();
-
-    // ICI : On utilise userId au lieu de socket.id
-    // Cela empêche qu'un même téléphone compte pour 2 personnes s'il se reconnecte
-    const idToUse = userId || socket.id; 
-    roomLikes[room][movieId].add(idToUse);
-
-    if (roomLikes[room][movieId].size >= 2) {
-      io.to(room).emit("match_found", data);
+      if (roomExists) {
+        socket.join(room);
+        const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+        io.to(room).emit("player_count_update", roomSize);
+        if (callback) callback({ status: "ok" });
+      } else {
+        if (callback) callback({ status: "error", message: "Salle introuvable" });
+      }
+    } catch (error) {
+      console.error("Erreur join_room:", error);
     }
   });
 
+  // 3. SYNCHRO RÉGLAGES
   socket.on("update_settings", (data) => {
-    socket.to(data.room).emit("settings_update", data);
+    try {
+      if (data && data.room) {
+        socket.to(data.room).emit("settings_update", data);
+      }
+    } catch (error) {
+      console.error("Erreur update_settings:", error);
+    }
   });
 
+  // 4. LANCEMENT JEU
   socket.on("start_game", (room) => {
-    io.to(room).emit("game_started");
+    try {
+      io.to(room).emit("game_started");
+    } catch (error) {
+      console.error("Erreur start_game:", error);
+    }
+  });
+
+  // 5. GESTION DES SWIPES (LA CORRECTION CRITIQUE EST ICI)
+  socket.on("swipe_right", (data) => {
+    try {
+      // Sécurité : Si les données sont incomplètes, on arrête tout de suite
+      if (!data || !data.room || !data.movieId) return;
+
+      const { room, movieId, userId } = data;
+
+      // Initialisation sécurisée
+      if (!roomLikes[room]) {
+        roomLikes[room] = {};
+      }
+      if (!roomLikes[room][movieId]) {
+        roomLikes[room][movieId] = new Set();
+      }
+
+      // On utilise l'ID unique (userId) s'il existe, sinon le socket.id
+      const idToUse = userId || socket.id;
+
+      // On ajoute le like
+      roomLikes[room][movieId].add(idToUse);
+
+      // LOGIQUE DE MATCH
+      if (roomLikes[room][movieId].size >= 2) {
+        io.to(room).emit("match_found", data);
+      }
+    } catch (error) {
+      // Si une erreur arrive ici, le serveur l'affiche mais NE CRASH PLUS
+      console.error("Erreur swipe_right (CRASH EVITÉ):", error);
+    }
   });
   
+  // 6. DÉCONNEXION
   socket.on("disconnecting", () => {
-    const rooms = socket.rooms;
-    rooms.forEach((room) => {
-      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 1;
-      io.to(room).emit("player_count_update", roomSize - 1);
-    });
+    try {
+      const rooms = socket.rooms;
+      rooms.forEach((room) => {
+        const roomSize = io.sockets.adapter.rooms.get(room)?.size || 1;
+        io.to(room).emit("player_count_update", roomSize - 1);
+      });
+    } catch (error) {
+      console.error("Erreur deconnexion:", error);
+    }
   });
 });
 
