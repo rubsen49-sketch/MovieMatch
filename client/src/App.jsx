@@ -17,7 +17,7 @@ const PLATFORMS = [
   { id: 8, name: "Netflix", logo: "https://media.themoviedb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
   { id: 337, name: "Disney+", logo: "https://media.themoviedb.org/t/p/original/97yvRBw1GzX7fXprcF80er19ot.jpg" },
   { id: 119, name: "Amazon Prime", logo: "https://media.themoviedb.org/t/p/original/pvske1MyAoymrs5bguRfVqYiM9a.jpg" }, // Lien corrigé
-  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/w2tge7UlG1Br8fFv8i6iX7YVw0.jpg" } // Lien corrigé
+  { id: 381, name: "Canal+", logo: "https://media.themoviedb.org/t/p/original/geOzgeKZWpZC3lymAVEHVIk3X0q.jpg" } // Lien corrigé
 ];
 
 const getUserId = () => {
