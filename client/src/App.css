@@ -463,3 +463,22 @@ button.primary-btn:active {
   font-size: 0.9rem;
   margin-left: 5px;
 }
+.pulse {
+  animation: pulse-animation 1.5s infinite ease-in-out;
+  font-weight: bold;
+  color: var(--text-sub);
+}
+
+@keyframes pulse-animation {
+  0% {
+    opacity: 0.5;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.5;
+  }
+}

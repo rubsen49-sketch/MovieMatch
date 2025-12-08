@@ -18,37 +18,43 @@ const io = new Server(server, {
 // Structure : { "roomID": { "filmID": count } }
 let rooms = {}; 
 
-io.on('connection', (socket) => {
-  console.log(`Utilisateur connecté : ${socket.id}`);
+io.on("connection", (socket) => {
+  console.log(`User Connected: ${socket.id}`);
 
-  // 1. Rejoindre une salle
-  socket.on('join_room', (room) => {
+  socket.on("join_room", (room) => {
     socket.join(room);
-    console.log(`User ${socket.id} a rejoint la salle : ${room}`);
+    
+    // Compter les joueurs dans la salle
+    const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
+    
+    // Prévenir tout le monde dans la salle du nouveau nombre
+    io.to(room).emit("player_count_update", roomSize);
   });
 
-  // 2. Gestion du Swipe
-  socket.on('swipe_right', ({ room, movieId, movieTitle }) => {
-    // Initialiser la salle si elle n'existe pas
-    if (!rooms[room]) {
-      rooms[room] = {};
-    }
+  // Quand l'hôte change les réglages, on prévient les autres
+  socket.on("update_settings", (data) => {
+    // data contient : { room, genre, rating }
+    socket.to(data.room).emit("settings_update", data);
+  });
 
-    // Initialiser le compteur de likes pour ce film
-    if (!rooms[room][movieId]) {
-      rooms[room][movieId] = 0;
-    }
+  // Quand l'hôte lance la partie
+  socket.on("start_game", (room) => {
+    io.to(room).emit("game_started");
+  });
 
-    // Ajouter un like
-    rooms[room][movieId] += 1;
-
-    // VÉRIFICATION DU MATCH (Si 2 personnes ont liké)
-    if (rooms[room][movieId] >= 2) {
-      io.to(room).emit('match_found', { 
-        movieId, 
-        title: movieTitle 
-      });
-    }
+  socket.on("swipe_right", (data) => {
+    socket.to(data.room).emit("match_found", data);
+  });
+  
+  // Gérer la déconnexion pour mettre à jour le compteur
+  socket.on("disconnecting", () => {
+    const rooms = socket.rooms;
+    rooms.forEach((room) => {
+      // On prévient la salle qu'un joueur part (le compteur va baisser)
+      // Note: On envoie le nombre - 1 car le socket est encore compté à cet instant
+      const roomSize = io.sockets.adapter.rooms.get(room)?.size || 1;
+      io.to(room).emit("player_count_update", roomSize - 1);
+    });
   });
 });
 
