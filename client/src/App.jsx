@@ -558,7 +558,7 @@ function App() {
         {view === "join" && (
           <div className="input-group">
             <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
-            <button className="primary-btn" onClick={() => joinLobby(null)}>Valider</button>
+            <button className="btn-back btn-create" onClick={() => joinLobby(null)}>Valider</button>
             <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
           </div>
         )}
