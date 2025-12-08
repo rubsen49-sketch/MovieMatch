@@ -56,12 +56,12 @@ function App() {
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
   
-  // NOUVEAUX REGLAGES
+  // REGLAGES
   const [selectedGenre, setSelectedGenre] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [selectedProviders, setSelectedProviders] = useState([]); 
   const [voteMode, setVoteMode] = useState('majority'); 
-  const [showHostSettings, setShowHostSettings] = useState(false); // Pour afficher/cacher le menu réglages
+  const [showHostSettings, setShowHostSettings] = useState(false);
 
   const [providersDisplay, setProvidersDisplay] = useState([]); 
   
@@ -77,6 +77,7 @@ function App() {
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
     if (targetRoom !== "") {
+      // CALCUL DE LA PAGE ALÉATOIRE BASÉ SUR LE CODE (Le même pour tout le monde)
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const randomPage = (seed % 30) + 1; 
       setPage(randomPage);
@@ -159,10 +160,7 @@ function App() {
     try {
       const response = await axios.get(endpoint);
       
-      // 🚨 CORRECTION SYNCHRO : On ne filtre PLUS par rapport à l'historique personnel "myMatches".
-      // Si on filtre localement, les listes deviennent différentes entre les joueurs.
-      // On prend la liste brute de l'API pour que tout le monde ait la même.
-      
+      // ON NE FILTRE PLUS LOCALEMENT pour garantir la même liste à tout le monde
       const newMovies = response.data.results; 
       
       if (newMovies.length === 0 && page < 500) {
@@ -184,7 +182,7 @@ function App() {
       if (settings.rating !== undefined) setMinRating(settings.rating);
       if (settings.providers !== undefined) setSelectedProviders(settings.providers);
       if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
-      setPage(1); 
+      // ICI : J'ai supprimé setPage(1) pour que tout le monde garde la page aléatoire
     });
 
     socket.on("game_started", () => setGameStarted(true));
@@ -228,7 +226,7 @@ function App() {
     setRoom("");
     setView("menu");
     setIsHost(false);
-    setShowHostSettings(false); // Reset de l'écran settings
+    setShowHostSettings(false); 
     window.location.reload(); 
   };
 
@@ -313,14 +311,12 @@ function App() {
     );
   }
 
-  // --- LOBBY AVEC LOGIQUE HÔTE AMÉLIORÉE ---
-  // --- LOBBY AVEC LOGIQUE HÔTE AMÉLIORÉE ---
+  // --- LOBBY ---
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
         <h1>Salle d'attente</h1>
         
-        {/* En-tête Commun : Code + Joueurs */}
         <div className="room-code-display" onClick={shareCode}>
           <h2 className="code-text">{room}</h2>
           <span className="click-hint">Toucher pour copier</span>
@@ -331,9 +327,8 @@ function App() {
 
         {isHost ? (
           <>
-            {/* VUE HÔTE : CHOIX ENTRE MENU PRINCIPAL OU REGLAGES */}
             {!showHostSettings ? (
-              // 1. Menu Principal du Lobby Hôte
+              // Menu Hôte
               <div className="host-lobby-menu">
                 <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
                   Paramètres de la partie
@@ -344,7 +339,7 @@ function App() {
                 </button>
               </div>
             ) : (
-              // 2. Menu des Réglages
+              // Réglages Hôte
               <div className="room-settings">
                 <h3>Paramètres</h3>
                 
@@ -361,7 +356,6 @@ function App() {
                   ))}
                 </div>
 
-                {/* LOGIQUE SOLO vs GROUPE */}
                 {playerCount > 1 ? (
                   <>
                     <label>Mode de vote :</label>
@@ -410,7 +404,7 @@ function App() {
             )}
           </>
         ) : (
-          // VUE INVITÉ
+          // Vue Invité
           <div className="waiting-box">
             <p className="pulse">En attente de l'hôte...</p>
             <div className="guest-settings-preview">
@@ -425,7 +419,6 @@ function App() {
           </div>
         )}
         
-        {/* Le bouton quitter est toujours visible en bas, sauf si on est dans les réglages */}
         {!showHostSettings && (
           <button className="unified-btn quit" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
         )}
