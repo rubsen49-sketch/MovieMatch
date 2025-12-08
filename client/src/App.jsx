@@ -31,27 +31,27 @@ const getUserId = () => {
 
 // --- NOUVEAU COMPOSANT : MODALE DE DÉTAILS ---
 const MovieDetailModal = ({ movie, onClose }) => {
-  const [fullDetails, setFullDetails] = useState(movie);
+  const [fullDetails, setFullDetails] = useState(null);
 
   useEffect(() => {
-    // Si on n'a pas la description (cas du Match parfois), on la récupère
-    if (!movie.overview && movie.id) {
-      axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR`)
-        .then(res => setFullDetails(res.data))
-        .catch(err => console.error(err));
-    }
-  }, [movie]);
+    // On demande : le film + les credits (acteurs) + les vidéos (trailers)
+    axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`)
+      .then(res => setFullDetails(res.data))
+      .catch(err => console.error(err));
+  }, [movie.id]);
 
-  if (!fullDetails) return null;
+  if (!fullDetails) return <div className="modal-overlay">Chargement...</div>;
 
-  // Gestion de l'image (compatible avec format Match ou format Movie)
-  const posterSrc = fullDetails.poster_path 
-    ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}`
-    : fullDetails.moviePoster // Fallback pour l'objet match
-      ? `https://image.tmdb.org/t/p/w500${fullDetails.moviePoster}`
-      : "";
+  const title = fullDetails.title;
+  const posterSrc = fullDetails.poster_path ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}` : "";
+  
+  // Logique pour trouver le trailer YouTube
+  const trailer = fullDetails.videos?.results?.find(
+    vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
+  );
 
-  const title = fullDetails.title || fullDetails.movieTitle;
+  // Les 5 premiers acteurs
+  const cast = fullDetails.credits?.cast?.slice(0, 5) || [];
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -62,12 +62,53 @@ const MovieDetailModal = ({ movie, onClose }) => {
         animate={{ y: 0, opacity: 1 }}
       >
         <button className="close-modal" onClick={onClose}>✕</button>
+        
         <div className="modal-scroll">
-          <img src={posterSrc} alt={title} className="modal-poster" />
+          {/* BANDE ANNONCE (si dispo) ou IMAGE */}
+          {trailer ? (
+            <div className="video-container">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}`}
+                title="Trailer"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          ) : (
+            <img src={posterSrc} alt={title} className="modal-poster" />
+          )}
+
           <div className="modal-text">
             <h2>{title}</h2>
-            {fullDetails.release_date && <span className="modal-date">Sortie : {fullDetails.release_date.split('-')[0]}</span>}
-            <p className="modal-overview">{fullDetails.overview || "Pas de description disponible."}</p>
+            
+            <div className="meta-tags">
+               {fullDetails.release_date && <span className="tag">{fullDetails.release_date.split('-')[0]}</span>}
+               {fullDetails.runtime && <span className="tag">{fullDetails.runtime} min</span>}
+               <span className="tag star">★ {fullDetails.vote_average?.toFixed(1)}</span>
+            </div>
+
+            <p className="modal-overview">{fullDetails.overview || "Pas de description."}</p>
+
+            {/* SECTION ACTEURS */}
+            {cast.length > 0 && (
+              <div className="cast-section">
+                <h3>Casting</h3>
+                <div className="cast-list">
+                  {cast.map(actor => (
+                    <div key={actor.id} className="actor-item">
+                      <img 
+                        src={actor.profile_path 
+                          ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` 
+                          : "https://via.placeholder.com/100x150?text=?"} 
+                        alt={actor.name} 
+                      />
+                      <span>{actor.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </motion.div>
@@ -514,40 +555,134 @@ function App() {
   if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement...</h2></div>;
   const movie = movies[currentIndex];
 
+  // ... (Début du fichier inchangé)
+
+// 1. VERSION AMÉLIORÉE DU MODAL (AVEC ACTEURS ET VIDEO)
+const MovieDetailModal = ({ movie, onClose }) => {
+  const [fullDetails, setFullDetails] = useState(null);
+
+  useEffect(() => {
+    // On demande : le film + les credits (acteurs) + les vidéos (trailers)
+    axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`)
+      .then(res => setFullDetails(res.data))
+      .catch(err => console.error(err));
+  }, [movie.id]);
+
+  if (!fullDetails) return <div className="modal-overlay">Chargement...</div>;
+
+  const title = fullDetails.title;
+  const posterSrc = fullDetails.poster_path ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}` : "";
+  
+  // Logique pour trouver le trailer YouTube
+  const trailer = fullDetails.videos?.results?.find(
+    vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
+  );
+
+  // Les 5 premiers acteurs
+  const cast = fullDetails.credits?.cast?.slice(0, 5) || [];
+
   return (
-    <div className="card-container">
-      {renderModal()} {/* La modale peut s'afficher ici aussi */}
-      <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
-      
+    <div className="modal-overlay" onClick={onClose}>
       <motion.div 
-        className="movie-card"
-        drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
-        style={{ x, rotate, opacity }}
-        initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+        className="modal-content" 
+        onClick={(e) => e.stopPropagation()}
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
       >
-        <div className="movie-poster-wrapper" onClick={() => setDetailsMovie(movie)}>
-           <img className="movie-poster clickable" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
-           <div className="info-hint">ℹ️ Infos</div>
-        </div>
+        <button className="close-modal" onClick={onClose}>✕</button>
         
-        <div className="movie-info">
-          <div className="providers-container">
-            {providersDisplay.map((p) => (
-              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
-            ))}
+        <div className="modal-scroll">
+          {/* BANDE ANNONCE (si dispo) ou IMAGE */}
+          {trailer ? (
+            <div className="video-container">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}`}
+                title="Trailer"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          ) : (
+            <img src={posterSrc} alt={title} className="modal-poster" />
+          )}
+
+          <div className="modal-text">
+            <h2>{title}</h2>
+            
+            <div className="meta-tags">
+               {fullDetails.release_date && <span className="tag">{fullDetails.release_date.split('-')[0]}</span>}
+               {fullDetails.runtime && <span className="tag">{fullDetails.runtime} min</span>}
+               <span className="tag star">★ {fullDetails.vote_average?.toFixed(1)}</span>
+            </div>
+
+            <p className="modal-overview">{fullDetails.overview || "Pas de description."}</p>
+
+            {/* SECTION ACTEURS */}
+            {cast.length > 0 && (
+              <div className="cast-section">
+                <h3>Casting</h3>
+                <div className="cast-list">
+                  {cast.map(actor => (
+                    <div key={actor.id} className="actor-item">
+                      <img 
+                        src={actor.profile_path 
+                          ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` 
+                          : "https://via.placeholder.com/100x150?text=?"} 
+                        alt={actor.name} 
+                      />
+                      <span>{actor.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-          <h2>{movie.title}</h2>
-          {/* DESCRIPTION SUPPRIMÉE ICI */}
-        </div>
-        
-        <div className="actions">
-          <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
-          <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
         </div>
       </motion.div>
-      <Analytics />
     </div>
   );
-}
+};
 
+// ... (Le reste du code jusqu'au return final de App) ...
+
+  // 2. CORRECTION DU RENDU FINAL (Déplacer renderModal)
+  return (
+    <>
+      {/* LE MODAL DOIT ÊTRE ICI, À L'EXTÉRIEUR DU CONTAINER */}
+      {renderModal()} 
+
+      <div className="card-container">
+        <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
+        
+        <motion.div 
+          className="movie-card"
+          drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
+          style={{ x, rotate, opacity }}
+          initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+        >
+          <div className="movie-poster-wrapper" onClick={() => setDetailsMovie(movie)}>
+             <img className="movie-poster clickable" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+             <div className="info-hint">ℹ️ Infos + Trailer</div>
+          </div>
+          
+          <div className="movie-info">
+            <div className="providers-container">
+              {providersDisplay.map((p) => (
+                <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
+              ))}
+            </div>
+            <h2>{movie.title}</h2>
+          </div>
+          
+          <div className="actions">
+            <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
+            <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
+          </div>
+        </motion.div>
+        <Analytics />
+      </div>
+    </>
+  );
+}
 export default App;
