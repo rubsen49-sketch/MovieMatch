@@ -598,3 +598,179 @@ select:focus {
     transform: scale(1);
   }
 }
+/* --- AJOUTS POUR LA MODALE DETAILS --- */
+
+/* Petit bouton info sur la carte */
+.movie-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.btn-info-small {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 20;
+}
+
+.btn-info-small:hover {
+  background: white;
+  color: black;
+  transform: scale(1.1);
+}
+
+/* Modale Overlay */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  /* Mobile friendly : slide up */
+}
+
+@media (min-width: 768px) {
+  .modal-backdrop {
+    align-items: center;
+  }
+}
+
+.modal-content {
+  background: #1a1a1a;
+  width: 100%;
+  max-width: 600px;
+  height: 90vh;
+  /* Prend presque tout l'écran */
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.8);
+  border-top: 1px solid #333;
+  animation: slideUp 0.3s ease-out;
+}
+
+@media (min-width: 768px) {
+  .modal-content {
+    height: auto;
+    max-height: 85vh;
+    border-radius: 20px;
+    border: 1px solid #333;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  color: white;
+  font-size: 2rem;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Trailer Video */
+.video-responsive {
+  overflow: hidden;
+  padding-bottom: 56.25%;
+  /* 16:9 ratio */
+  position: relative;
+  height: 0;
+  background: black;
+}
+
+.video-responsive iframe {
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+.modal-banner {
+  width: 100%;
+  height: 250px;
+  object-fit: cover;
+  mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+.modal-info {
+  padding: 20px;
+}
+
+.modal-info h2 {
+  font-size: 1.8rem;
+  margin: 0 0 10px 0;
+  color: white;
+}
+
+.modal-year {
+  font-weight: normal;
+  color: #888;
+  font-size: 1.2rem;
+}
+
+.modal-meta {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  font-size: 1rem;
+  color: #bbb;
+}
+
+.rating {
+  color: var(--gold);
+  font-weight: bold;
+}
+
+.modal-synopsis {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #ddd;
+  margin-bottom: 25px;
+}
+
+.modal-credits p {
+  margin: 5px 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.modal-credits strong {
+  color: white;
+}

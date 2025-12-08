@@ -28,6 +28,62 @@ const getUserId = () => {
   return id;
 };
 
+// --- COMPOSANT MODALE DETAILS ---
+const MovieDetailsModal = ({ movie, onClose }) => {
+  if (!movie) return null;
+
+  // Trouver le trailer YouTube
+  const trailer = movie.videos?.results?.find(
+    vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
+  );
+
+  // Prendre les 5 premiers acteurs
+  const cast = movie.credits?.cast?.slice(0, 5).map(c => c.name).join(", ");
+  const director = movie.credits?.crew?.find(c => c.job === "Director")?.name;
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        <button className="modal-close" onClick={onClose}>&times;</button>
+        
+        {trailer ? (
+          <div className="video-responsive">
+            <iframe
+              src={`https://www.youtube.com/embed/${trailer.key}`}
+              title="Trailer"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            ></iframe>
+          </div>
+        ) : (
+          <img 
+            src={`https://image.tmdb.org/t/p/w500${movie.backdrop_path || movie.poster_path}`} 
+            alt={movie.title} 
+            className="modal-banner"
+          />
+        )}
+
+        <div className="modal-info">
+          <h2>{movie.title} <span className="modal-year">({movie.release_date?.split('-')[0]})</span></h2>
+          
+          <div className="modal-meta">
+            <span className="rating">⭐ {movie.vote_average?.toFixed(1)}</span>
+            <span>{movie.runtime} min</span>
+          </div>
+
+          <p className="modal-synopsis">{movie.overview}</p>
+          
+          <div className="modal-credits">
+            {director && <p><strong>Réalisateur :</strong> {director}</p>}
+            {cast && <p><strong>Casting :</strong> {cast}</p>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MatchItem = ({ movieId }) => {
   const [movieData, setMovieData] = useState(null);
   useEffect(() => {
@@ -56,6 +112,9 @@ function App() {
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
   
+  // DETAILS MOVIE STATE
+  const [detailMovie, setDetailMovie] = useState(null);
+
   // REGLAGES
   const [selectedGenre, setSelectedGenre] = useState("");
   const [minRating, setMinRating] = useState(0);
@@ -77,7 +136,6 @@ function App() {
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
     if (targetRoom !== "") {
-      // CALCUL DE LA PAGE ALÉATOIRE BASÉ SUR LE CODE (Le même pour tout le monde)
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const randomPage = (seed % 30) + 1; 
       setPage(randomPage);
@@ -159,8 +217,6 @@ function App() {
 
     try {
       const response = await axios.get(endpoint);
-      
-      // ON NE FILTRE PLUS LOCALEMENT pour garantir la même liste à tout le monde
       const newMovies = response.data.results; 
       
       if (newMovies.length === 0 && page < 500) {
@@ -174,6 +230,18 @@ function App() {
     }
   };
 
+  // NOUVELLE FONCTION POUR RECUPERER LES DETAILS
+  const openMovieDetails = async (movieId) => {
+    try {
+      const response = await axios.get(
+        `https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`
+      );
+      setDetailMovie(response.data);
+    } catch (error) {
+      console.error("Erreur details:", error);
+    }
+  };
+
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
 
@@ -182,7 +250,6 @@ function App() {
       if (settings.rating !== undefined) setMinRating(settings.rating);
       if (settings.providers !== undefined) setSelectedProviders(settings.providers);
       if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
-      // ICI : J'ai supprimé setPage(1) pour que tout le monde garde la page aléatoire
     });
 
     socket.on("game_started", () => setGameStarted(true));
@@ -283,16 +350,29 @@ function App() {
 
   // --- AFFICHAGE ---
 
+  // RENDU DE LA MODALE AU DESSUS DE TOUT LE RESTE
+  const renderModal = () => (
+    <MovieDetailsModal 
+      movie={detailMovie} 
+      onClose={() => setDetailMovie(null)} 
+    />
+  );
+
   if (showMyMatches) {
     return (
       <div className="matches-screen">
+        {renderModal()}
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
         <h2>Mes Matchs</h2>
         {savedMatches.length > 0 && (
           <button onClick={resetMyMatches} className="btn-reset">🗑️ Réinitialiser</button>
         )}
         <div className="matches-grid">
-          {savedMatches.map(id => <MatchItem key={id} movieId={id} />)}
+          {savedMatches.map(id => (
+            <div key={id} onClick={() => openMovieDetails(id)}>
+              <MatchItem movieId={id} />
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -301,11 +381,18 @@ function App() {
   if (match) {
     return (
       <div className="match-overlay">
+        {renderModal()}
         <h1 className="match-title">IT'S A MATCH!</h1>
         {match.moviePoster && (
           <img src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} alt={match.movieTitle} className="match-poster"/>
         )}
         <h2>{match.movieTitle}</h2>
+        
+        {/* BOUTON DETAILS DANS MATCH */}
+        <button className="unified-btn secondary" style={{marginBottom: '15px'}} onClick={() => openMovieDetails(match.movieId)}>
+          Voir les détails ℹ️
+        </button>
+
         <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
       </div>
     );
@@ -328,7 +415,6 @@ function App() {
         {isHost ? (
           <>
             {!showHostSettings ? (
-              // Menu Hôte
               <div className="host-lobby-menu">
                 <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
                   Paramètres de la partie
@@ -339,7 +425,6 @@ function App() {
                 </button>
               </div>
             ) : (
-              // Réglages Hôte
               <div className="room-settings">
                 <h3>Paramètres</h3>
                 
@@ -404,7 +489,6 @@ function App() {
             )}
           </>
         ) : (
-          // Vue Invité
           <div className="waiting-box">
             <p className="pulse">En attente de l'hôte...</p>
             <div className="guest-settings-preview">
@@ -453,6 +537,7 @@ function App() {
 
   return (
     <div className="card-container">
+      {renderModal()}
       <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
       <motion.div 
         className="movie-card"
@@ -462,11 +547,21 @@ function App() {
       >
         <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
         <div className="movie-info">
-          <div className="providers-container">
-            {providersDisplay.map((p) => (
-              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
-            ))}
+          <div className="movie-header-row">
+            <div className="providers-container">
+              {providersDisplay.map((p) => (
+                <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
+              ))}
+            </div>
+            {/* PETIT BOUTON INFO */}
+            <button className="btn-info-small" onClick={(e) => {
+              e.stopPropagation(); // Evite de déclencher d'autres clics
+              openMovieDetails(movie.id);
+            }}>
+              ℹ️
+            </button>
           </div>
+
           <h2>{movie.title}</h2>
           <p className="movie-desc">{movie.overview}</p>
         </div>
