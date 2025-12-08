@@ -1,18 +1,23 @@
 :root {
+  /* Palette de couleurs centralisée */
   --bg-app: #111111;
   --bg-card: #1e1e1e;
   --text-main: #ffffff;
   --text-sub: #a1a1a1;
+
+  /* NOS COULEURS PRINCIPALES */
   --primary: #e50914;
+  /* Netflix Red (Marque) */
   --red: #ff4757;
+  /* Rouge vif (Pass/Refuser) */
   --gold: #ffb300;
+  /* OR / AMBRE (Like/Match/Valider) - Remplace le vert */
+
   --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 * {
   box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  /* Retire le flash bleu au clic sur mobile */
 }
 
 body {
@@ -23,11 +28,7 @@ body {
   font-family: var(--font-main);
   width: 100vw;
   height: 100vh;
-  /* Fallback */
-  height: 100dvh;
-  /* Hauteur réelle mobile */
   overflow: hidden;
-  /* Empêche tout scroll global */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,10 +39,11 @@ body {
   height: 100%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: center;
 }
 
-/* Scrollbar invisible */
+/* Scrollbar invisible mais fonctionnelle */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
