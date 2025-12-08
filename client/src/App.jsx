@@ -50,8 +50,6 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  // --- FONCTIONS LOGIQUES (Définies avant les useEffects) ---
-
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let result = "";
@@ -103,7 +101,6 @@ function App() {
     socket.on("player_count_update", (count) => setPlayerCount(count));
 
     socket.on("settings_update", (data) => {
-      // Mise à jour silencieuse des réglages pour l'invité (pour l'API)
       setSelectedGenre(data.genre);
       setMinRating(data.rating);
     });
@@ -130,15 +127,12 @@ function App() {
     };
   }, []);
 
-  // --- CHARGEMENT DES FILMS ---
-  // Se déclenche uniquement quand le jeu démarre
   useEffect(() => {
     if (gameStarted) {
       fetchMovies();
     }
   }, [page, gameStarted]); 
 
-  // --- LOGIQUE INFINIE ---
   useEffect(() => {
     if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
       setPage(prev => prev + 1);
@@ -146,18 +140,14 @@ function App() {
   }, [currentIndex, movies.length, gameStarted]);
 
 
-  // --- ACTIONS UTILISATEUR ---
-
   const joinLobby = () => {
     if (room !== "") {
       if (isHost) {
-        // L'hôte CRÉE la salle
         socket.emit("create_room", room);
         setIsInRoom(true);
         setGameStarted(false);
         setView("lobby");
       } else {
-        // L'invité REJOINT (avec vérification serveur)
         socket.emit("join_room", room, (response) => {
           if (response.status === "ok") {
             setIsInRoom(true);
@@ -199,7 +189,13 @@ function App() {
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
     if (direction === "right") {
-      socket.emit("swipe_right", { room, movieId: currentMovie.id, movieTitle: currentMovie.title });
+      // ON ENVOIE MAINTENANT L'AFFICHE (poster_path) POUR LE POPUP
+      socket.emit("swipe_right", { 
+        room, 
+        movieId: currentMovie.id, 
+        movieTitle: currentMovie.title,
+        moviePoster: currentMovie.poster_path 
+      });
     }
     setCurrentIndex((prev) => prev + 1);
   };
@@ -212,14 +208,35 @@ function App() {
     else if (info.offset.x < -100) handleSwipe("left");
   };
 
-  // --- ECRANS D'AFFICHAGE ---
+  // FONCTION POUR VIDER LES MATCHS
+  const resetMyMatches = () => {
+    if(confirm("Voulez-vous vraiment effacer tous vos matchs ?")) {
+      localStorage.removeItem('myMatches');
+      setSavedMatches([]);
+    }
+  };
 
-  // 1. ECRAN MES MATCHS
+  // --- ECRANS ---
+
+  // 1. ECRAN MES MATCHS (Avec Bouton Reset)
   if (showMyMatches) {
     return (
       <div className="matches-screen">
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
         <h2>Mes Matchs</h2>
+        
+        {savedMatches.length > 0 && (
+          <button 
+            onClick={resetMyMatches}
+            style={{
+              background: '#333', color: '#ff4757', border: '1px solid #ff4757', 
+              padding: '8px 15px', borderRadius: '20px', marginBottom: '15px', cursor: 'pointer'
+            }}
+          >
+            🗑️ Réinitialiser mes matchs
+          </button>
+        )}
+
         <div className="matches-grid">
           {savedMatches.map(id => <MatchItem key={id} movieId={id} />)}
         </div>
@@ -227,18 +244,26 @@ function App() {
     );
   }
 
-  // 2. POPUP MATCH
+  // 2. POPUP MATCH (Avec Affiche)
   if (match) {
     return (
       <div className="match-overlay">
         <h1 className="match-title">IT'S A MATCH!</h1>
-        <h2 style={{margin: '20px'}}>{match.title}</h2>
+        {/* Affichage de l'image du film matché */}
+        {match.moviePoster && (
+          <img 
+            src={`https://image.tmdb.org/t/p/w300${match.moviePoster}`} 
+            alt={match.movieTitle} 
+            style={{borderRadius: '15px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', margin: '20px 0', maxHeight: '300px'}}
+          />
+        )}
+        <h2 style={{margin: '10px 0 30px 0'}}>{match.movieTitle}</h2>
         <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
       </div>
     );
   }
 
-  // 3. LOBBY (SALLE D'ATTENTE)
+  // 3. LOBBY
   if (isInRoom && !gameStarted) {
     return (
       <div className="welcome-screen">
@@ -327,7 +352,7 @@ function App() {
     );
   }
 
-  // 5. ECRAN JEU (CARTE)
+  // 5. JEU
   if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement de la suite...</h2></div>;
 
   const movie = movies[currentIndex];
