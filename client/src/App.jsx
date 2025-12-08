@@ -532,34 +532,45 @@ function App() {
     );
   }
 
+  // ... code précédent ...
+
   if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement...</h2></div>;
   const movie = movies[currentIndex];
 
   return (
     <div className="card-container">
       {renderModal()}
+      
+      {/* Bouton Quitter discret en haut à gauche */}
       <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
-      {/* ... le début du fichier reste identique ... */}
       
       <motion.div 
         className="movie-card"
-        drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
+        drag="x" 
+        dragConstraints={{ left: 0, right: 0 }} 
+        onDragEnd={handleDragEnd}
         style={{ x, rotate, opacity }}
-        initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+        initial={{ scale: 0.9, opacity: 0 }} 
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.2 }}
       >
-        {/* NOUVEAU WRAPPER POUR L'IMAGE ET LE BOUTON */}
         <div className="poster-wrapper">
-          <img className="movie-poster" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
+          <img 
+            className="movie-poster" 
+            src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
+            alt={movie.title}
+            draggable="false" 
+          />
           
-          {/* BOUTON INFO FLOTTANT BIEN VISIBLE */}
+          {/* Le fameux bouton Info flottant */}
           <button className="btn-info-floating" onClick={(e) => {
-             e.stopPropagation();
+             e.stopPropagation(); // Empêche le clic de traverser
              openMovieDetails(movie.id);
           }}>
             ℹ️
           </button>
 
-          {/* TUTORIEL QUI DISPARAIT APRES QUELQUES SECONDES (OPTIONNEL) */}
+          {/* Le Tuto main qui bouge (disparait seul) */}
           {currentIndex === 0 && (
              <div className="swipe-tutorial">
                <span className="tuto-hand" style={{transform: 'scaleX(-1)'}}>👈</span>
@@ -570,13 +581,13 @@ function App() {
 
         <div className="movie-info">
           <div className="providers-container">
-            {providersDisplay.map((p) => (
-              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
-            ))}
+            {providersDisplay.length > 0 ? providersDisplay.map((p) => (
+              <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" alt="provider" />
+            )) : <span style={{fontSize:'0.8rem', color:'#666'}}>Non disponible en stream</span>}
           </div>
 
           <h2>{movie.title}</h2>
-          <p className="movie-desc">{movie.overview}</p>
+          <p className="movie-desc">{movie.overview || "Aucune description disponible."}</p>
         </div>
       </motion.div>
 
@@ -584,9 +595,8 @@ function App() {
         <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
         <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
       </div>
-      
-      {/* Petit texte d'aide discret en bas */}
-      <p className="swipe-hint-text">Glisse la carte ou utilise les boutons</p>
+
+      <p className="swipe-hint-text">Swipe ou utilise les boutons</p>
 
       <Analytics />
     </div>
