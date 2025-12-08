@@ -14,26 +14,10 @@ const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
 const PLATFORMS = [
-  { 
-    id: 8, 
-    name: "Netflix", 
-    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/e3/96/16/e3961633-4702-862c-805e-85571691255e/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
-  },
-  { 
-    id: 337, 
-    name: "Disney+", 
-    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/95/9b/6c/959b6c00-0b61-9c88-e92b-81d3f2832819/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
-  },
-  { 
-    id: 119, 
-    name: "Amazon Prime", 
-    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple116/v4/0f/5e/52/0f5e5233-0306-69f8-d7b6-c5d012176840/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
-  },
-  { 
-    id: 381, 
-    name: "Canal+", 
-    logo: "https://is1-ssl.mzstatic.com/image/thumb/Purple126/v4/99/53/36/9953363f-272e-333e-6243-556114878546/AppIcon-0-0-1x_U007emarketing-0-7-0-0-85-220.png/512x512bb.jpg" 
-  }
+  { id: 8, name: "Netflix", logo: "https://media.themoviedb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
+  { id: 337, name: "Disney+", logo: "https://media.themoviedb.org/t/p/original/97yvRBw1GzX7fXprcF80er19ot.jpg" },
+  { id: 119, name: "Amazon Prime", logo: "https://media.themoviedb.org/t/p/original/pvske1MyAoymrs5bguRfVqYiM9a.jpg" }, // Lien corrigé
+  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/w2tge7UlG1Br8fFv8i6iX7YVw0.jpg" } // Lien corrigé
 ];
 
 const getUserId = () => {
