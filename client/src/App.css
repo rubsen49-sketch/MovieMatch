@@ -1,59 +1,51 @@
-/* --- 1. CONFIGURATION GLOBALE --- */
-:root {
-  --primary: #e50914;
-  --red: #ff4757;
-  --gold: #ffb300;
-  --bg-card: #1e1e1e;
-  --text-sub: #a1a1a1;
-}
-
-/* On laisse index.css gérer le #root et le body pour éviter les conflits */
-
-/* --- 2. LAYOUT DU JEU (FLEXIBLE) --- */
+/* --- LAYOUT GLOBAL JEU --- */
 .card-container {
   width: 100%;
-  max-width: 450px;
-  /* Largeur max téléphone */
+  max-width: 480px;
+  /* Largeur max téléphone/tablette */
   height: 100%;
-  max-height: 90vh;
-  /* Garde une petite marge en haut/bas */
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  /* Ecarte la carte des boutons */
-  padding: 10px;
+  justify-content: space-evenly;
+  /* Répartit l'espace équitablement */
+  align-items: center;
+  padding: 10px 15px 20px 15px;
+  /* Marges de sécurité */
   position: relative;
 }
 
-/* --- 3. LA CARTE --- */
+/* --- LA CARTE (Conteneur Principal) --- */
 .movie-card {
+  width: 100%;
+  /* La carte prend toute la place possible moins les boutons */
   flex: 1;
-  /* LA CLE : Prend tout l'espace disponible */
+  max-height: 75vh;
+  /* Sécurité pour ne pas toucher les bords */
   background: var(--bg-card);
-  border-radius: 20px;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
   border: 1px solid #333;
   display: flex;
   flex-direction: column;
-  cursor: grab;
   position: relative;
-  margin-bottom: 20px;
-  /* Espace avant les boutons */
+  margin-bottom: 25px;
+  /* Espace OBLIGATOIRE sous la carte */
+  cursor: grab;
 }
 
 .movie-card:active {
   cursor: grabbing;
 }
 
-/* --- 4. IMAGE & BOUTON FLOTTANT --- */
+/* --- ZONE IMAGE (HAUT) --- */
 .poster-wrapper {
   position: relative;
-  flex: 1;
-  /* L'image prend toute la place libre dans la carte */
   width: 100%;
-  min-height: 0;
-  /* Important pour Firefox/Flexbox */
+  flex-grow: 1;
+  /* Prend l'espace libre */
+  min-height: 50%;
+  /* L'image fera toujours au moins la moitié de la carte */
   overflow: hidden;
 }
 
@@ -61,23 +53,22 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  /* Remplit sans déformer */
   display: block;
 }
 
-/* Bouton Info sur l'image */
+/* Bouton Info Flottant */
 .btn-info-floating {
   position: absolute;
   top: 15px;
   right: 15px;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   color: white;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,69 +77,71 @@
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* --- 5. INFOS DU FILM (Partie basse de la carte) --- */
+/* --- ZONE TEXTE (BAS) --- */
 .movie-info {
-  flex-shrink: 0;
-  /* Ne s'écrase jamais */
+  background: linear-gradient(to top, #111 0%, #1e1e1e 100%);
   padding: 20px;
-  background: linear-gradient(to top, #111, #1e1e1e);
   border-top: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  /* Limite la hauteur du texte pour ne pas écraser l'image */
+  max-height: 40%;
+  overflow-y: auto;
+  /* Scroll si le synopsis est trop long */
 }
 
 .providers-container {
   display: flex;
   gap: 8px;
   margin-bottom: 10px;
+  flex-shrink: 0;
 }
 
 .provider-logo {
-  width: 25px;
-  height: 25px;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
 }
 
 .movie-info h2 {
-  font-size: 1.5rem;
-  margin: 0 0 10px 0;
+  font-size: 1.6rem;
+  margin: 0 0 8px 0;
   color: white;
   line-height: 1.2;
+  flex-shrink: 0;
 }
 
 .movie-desc {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-sub);
   margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  /* Max 3 lignes */
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  line-height: 1.4;
 }
 
-/* --- 6. BOUTONS D'ACTION (En bas de l'écran) --- */
+/* --- BOUTONS D'ACTION (BAS) --- */
 .actions {
-  flex-shrink: 0;
   display: flex;
   justify-content: center;
-  gap: 40px;
-  padding-bottom: 10px;
-  height: 90px;
-  /* Hauteur réservée pour les boutons */
+  gap: 50px;
+  /* Grand écartement pour bien respirer */
+  width: 100%;
+  height: 80px;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .btn-circle {
-  width: 70px;
-  height: 70px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   border: none;
-  font-size: 2rem;
+  font-size: 2.2rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s;
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+  transition: transform 0.1s;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
 }
 
 .btn-circle:active {
@@ -158,22 +151,24 @@
 .btn-pass {
   background: #222;
   color: var(--red);
-  border: 2px solid #333;
+  border: 2px solid rgba(255, 71, 87, 0.3);
 }
 
 .btn-like {
   background: #222;
   color: var(--gold);
-  border: 2px solid #333;
+  border: 2px solid rgba(255, 179, 0, 0.3);
 }
 
-/* --- 7. TUTO / AIDE --- */
+/* --- TUTORIEL & INDICES --- */
 .swipe-hint-text {
   text-align: center;
   color: #555;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   margin-top: -10px;
-  margin-bottom: 10px;
+  opacity: 0.7;
 }
 
 .swipe-tutorial {
@@ -183,19 +178,18 @@
   width: 100%;
   display: flex;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 30px;
   pointer-events: none;
   z-index: 30;
   transform: translateY(-50%);
-  animation: fadeOut 0.5s forwards 4s;
-  /* Disparait après 4s */
+  animation: fadeOut 0.5s forwards 3.5s;
 }
 
 .tuto-hand {
-  font-size: 4rem;
-  filter: drop-shadow(0 0 10px rgba(0, 0, 0, 0.8));
-  animation: bounceSide 1.5s infinite;
-  opacity: 0.8;
+  font-size: 3.5rem;
+  filter: drop-shadow(0 0 15px rgba(0, 0, 0, 1));
+  animation: bounceSide 1.2s infinite ease-in-out;
+  opacity: 0.9;
 }
 
 @keyframes bounceSide {
@@ -217,12 +211,30 @@
   }
 }
 
-/* --- RESTE (MODALES & LOBBY - INCHANGÉ) --- */
+/* --- ELEMENTS UTILITAIRES (Modale, Lobby, etc.) --- */
+.btn-quit {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ccc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+}
+
+/* Modales & Lobby inchangés mais sécurisés */
 .welcome-screen {
   padding: 20px;
   width: 100%;
   max-width: 450px;
   text-align: center;
+  overflow-y: auto;
+  max-height: 100%;
 }
 
 .welcome-screen h1 {
@@ -255,19 +267,19 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   z-index: 9999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 10px;
 }
 
 .modal-content {
   background: #1a1a1a;
   width: 100%;
-  max-width: 600px;
-  max-height: 80vh;
+  max-width: 500px;
+  max-height: 90vh;
   border-radius: 20px;
   overflow-y: auto;
   position: relative;
@@ -281,12 +293,15 @@
   background: rgba(0, 0, 0, 0.5);
   border: none;
   color: white;
-  font-size: 1.5rem;
-  width: 35px;
-  height: 35px;
+  font-size: 2rem;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   cursor: pointer;
   z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .modal-banner {
@@ -318,7 +333,7 @@
 .matches-screen {
   width: 100%;
   padding: 20px;
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
 }
 
@@ -327,6 +342,7 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-top: 20px;
+  padding-bottom: 40px;
 }
 
 .mini-card img {
@@ -334,7 +350,25 @@
   border-radius: 8px;
 }
 
-/* Utils */
+/* Utils Inputs */
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+input,
+select {
+  padding: 15px;
+  border-radius: 10px;
+  border: 1px solid #444;
+  background: #222;
+  color: white;
+  width: 100%;
+  font-size: 1rem;
+}
+
 .unified-btn {
   width: 100%;
   padding: 15px;
@@ -353,35 +387,7 @@
 .unified-btn.secondary {
   background: #333;
   color: white;
-}
-
-.input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  width: 100%;
-}
-
-input {
-  padding: 15px;
-  border-radius: 10px;
-  border: 1px solid #444;
-  background: #222;
-  color: white;
-}
-
-.btn-quit {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background: transparent;
   border: 1px solid #555;
-  color: #888;
-  padding: 5px 12px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  z-index: 50;
 }
 
 .room-code-display {
@@ -398,4 +404,33 @@ input {
   margin: 0;
   color: var(--gold);
   letter-spacing: 5px;
+}
+
+.provider-chip {
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  border: 2px solid #333;
+  overflow: hidden;
+  opacity: 0.5;
+}
+
+.provider-chip.selected {
+  border-color: var(--gold);
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.providers-select {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.provider-chip img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
