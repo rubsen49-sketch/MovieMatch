@@ -250,11 +250,13 @@ function App() {
         {view === "create" && (
           <div className="input-group">
             <p style={{marginBottom: '5px', color: '#aaa'}}>Voici le code de votre salle :</p>
-            <div className="room-code-display">
+            <div 
+              className="room-code-display" 
+              onClick={shareCode}
+              title="Toucher pour partager"
+            >
               <h2 className="code-text">{room}</h2>
-              <button className="btn-share" onClick={shareCode} title="Partager le code">
-                🔗
-              </button>
+              <span className="click-hint">Toucher pour copier 📋</span>
             </div>
             
             <div className="room-settings">

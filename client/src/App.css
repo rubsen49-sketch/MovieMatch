@@ -402,18 +402,35 @@ button.primary-btn:active {
 }
 
 /* --- ÉCRAN CRÉATION (Le Code) --- */
+/* Modification : La zone devient un gros bouton interactif */
 .room-code-display {
   background: #222;
   border: 2px dashed #555;
-  padding: 15px 25px;
-  /* Un peu plus large */
+  padding: 20px;
   border-radius: 15px;
   margin: 20px 0;
+  cursor: pointer;
+  /* Affiche la main pour dire "clique-moi" */
+  transition: all 0.2s ease;
+  position: relative;
+  /* Pour positionner une info-bulle si besoin */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  /* Code à gauche, bouton à droite */
-  gap: 20px;
+  justify-content: center;
+}
+
+/* Effet au survol (PC) */
+.room-code-display:hover {
+  background: #2a2a2a;
+  border-color: var(--primary);
+  transform: scale(1.02);
+}
+
+/* Effet au clic (Mobile & PC) */
+.room-code-display:active {
+  transform: scale(0.95);
+  background: #1a1a1a;
 }
 
 .code-text {
@@ -423,7 +440,15 @@ button.primary-btn:active {
   letter-spacing: 5px;
   margin: 0;
   font-family: monospace;
-  /* Pour que ça fasse "Code" */
+}
+
+/* Petit texte "Cliquer pour copier" qui apparaît en dessous */
+.click-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 5px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .room-settings {
@@ -437,29 +462,4 @@ button.primary-btn:active {
   color: var(--text-sub);
   font-size: 0.9rem;
   margin-left: 5px;
-}
-.btn-share {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid #555;
-  color: var(--primary);
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.btn-share:hover {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  transform: scale(1.1);
-}
-
-.btn-share:active {
-  transform: scale(0.9);
 }
