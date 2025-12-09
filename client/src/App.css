@@ -1187,6 +1187,40 @@ select:focus {
   border-color: var(--red);
 }
 
+.btn-library {
+  width: auto;
+  padding: 5px 15px;
+  fontSize: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-library .btn-icon {
+  display: none;
+  /* Hidden by default on desktop if text is shown */
+}
+
+/* --- MOBILE RESPONSIVE TWEAKS --- */
+@media (max-width: 600px) {
+  .btn-library .btn-text {
+    display: none;
+    /* Hide text on mobile */
+  }
+
+  .btn-library .btn-icon {
+    display: inline;
+    /* Show icon only */
+    font-size: 1.2rem;
+  }
+
+  .btn-library {
+    padding: 5px 10px;
+    /* Smaller padding */
+  }
+}
+
+
 
 /* --- MOBILE RESPONSIVE --- */
 .view-toggles {
