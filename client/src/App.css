@@ -166,7 +166,8 @@
 
   /* Adjust Content area padding/margin if needed */
   .content-area {
-    /* No sidebar here */
+    padding-top: 60px;
+    /* Space for mobile header */
   }
 }
 
@@ -270,6 +271,7 @@
   text-transform: uppercase;
   margin-bottom: var(--space-sm);
   background: -webkit-linear-gradient(#fff, #999);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -2px;
@@ -285,6 +287,18 @@
 .hero-actions {
   display: flex;
   gap: var(--space-md);
+}
+
+.desktop-movie-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: var(--space-sm);
+  background: -webkit-linear-gradient(#fff, #aaa);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -1px;
 }
 
 /* BUTTONS OVERRIDES FOR HERO */
@@ -769,6 +783,7 @@ select:focus {
     line-height: 1.1;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#fff, #aaa);
+    background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
   }
