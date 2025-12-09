@@ -160,262 +160,262 @@ function App() {
   /* Removed removeMovie confirm logic for later UI improvement or kept as is, but replacing native alert/confirm */
   // NOTE: Native 'confirm' is blocking and reliable for deletes. keeping it distinct from 'toasts'.
 
-  // Replace alerts in sockets/actions:
+  const removeMovie = (movieId) => {
+    if (confirm("Supprimer ce film de la liste ?")) {
+      const updated = savedMatches.filter(m => m.id !== movieId);
+      setSavedMatches(updated);
+      localStorage.setItem('myMatches', JSON.stringify(updated));
+      saveToCloud(user, updated);
+      toast.success("Film supprimé");
+    }
+  };
 
-  if (confirm("Supprimer ce film de la liste ?")) {
-    const updated = savedMatches.filter(m => m.id !== movieId);
-    setSavedMatches(updated);
-    localStorage.setItem('myMatches', JSON.stringify(updated));
-    saveToCloud(user, updated);
-  }
-};
+  const bulkRemoveMovies = (movieIds) => {
+    if (confirm(`Supprimer ces ${movieIds.length} films ?`)) {
+      const updated = savedMatches.filter(m => !movieIds.includes(m.id));
+      setSavedMatches(updated);
+      localStorage.setItem('myMatches', JSON.stringify(updated));
+      saveToCloud(user, updated);
+    }
+  };
 
-const bulkRemoveMovies = (movieIds) => {
-  if (confirm(`Supprimer ces ${movieIds.length} films ?`)) {
-    const updated = savedMatches.filter(m => !movieIds.includes(m.id));
-    setSavedMatches(updated);
-    localStorage.setItem('myMatches', JSON.stringify(updated));
-    saveToCloud(user, updated);
-  }
-};
+  // --- SOCKET & GAME LOGIC ---
 
-// --- SOCKET & GAME LOGIC ---
+  // --- SOCKET & GAME LOGIC Replaced by Hook ---
 
-// --- SOCKET & GAME LOGIC Replaced by Hook ---
+  // Wrapper for WelcomeScreen to use hook's joinRoom cleanly
+  const joinLobby = (roomCodeToJoin = null) => {
+    if (roomCodeToJoin) {
+      // Explicit join/create logic handled inside hook if we called createRoom?
+      // Wait, App.jsx joinLobby was mixing create vs join.
+      // The hook has createRoom and joinRoom.
+      // If we generate code -> createRoom.
+      // If we type code -> joinRoom.
+      joinRoom(roomCodeToJoin);
+    } else if (room) {
+      joinRoom(room);
+    }
+  };
 
-// Wrapper for WelcomeScreen to use hook's joinRoom cleanly
-const joinLobby = (roomCodeToJoin = null) => {
-  if (roomCodeToJoin) {
-    // Explicit join/create logic handled inside hook if we called createRoom?
-    // Wait, App.jsx joinLobby was mixing create vs join.
-    // The hook has createRoom and joinRoom.
-    // If we generate code -> createRoom.
-    // If we type code -> joinRoom.
-    joinRoom(roomCodeToJoin);
-  } else if (room) {
-    joinRoom(room);
-  }
-};
+  const generateRoomCode = () => {
+    createRoom();
+    // createRoom in hook handles updating `room` state and emitting events.
+    // However, createRoom generates its own code internally in the hook version I wrote.
+    // So we just call it. But wait, `createRoom` in hook sets the room state.
+    // Does it switch view to lobby? hook updates `isInRoom`. 
+    // App.jsx effect observes `isInRoom`.
+    setView("lobby"); // Safe to set view here?
+  };
 
-const generateRoomCode = () => {
-  createRoom();
-  // createRoom in hook handles updating `room` state and emitting events.
-  // However, createRoom generates its own code internally in the hook version I wrote.
-  // So we just call it. But wait, `createRoom` in hook sets the room state.
-  // Does it switch view to lobby? hook updates `isInRoom`. 
-  // App.jsx effect observes `isInRoom`.
-  setView("lobby"); // Safe to set view here?
-};
-
-const handleSwipe = (direction) => {
-  const currentMovie = movies[currentIndex];
-  swipe(direction, currentMovie, userId);
-  setCurrentIndex((prev) => prev + 1);
-};
-
-const toggleGenre = (id) => {
-  let newGenres;
-  if (selectedGenre.includes(id)) {
-    newGenres = selectedGenre.filter(g => g !== id);
-  } else {
-    newGenres = [...selectedGenre, id];
-  }
-  updateSettings({ genre: newGenres });
-};
-
-// Side effect to update view when entering room
-useEffect(() => {
-  if (isInRoom) setView("lobby");
-}, [isInRoom]);
-
-// Clean up socket listeners is handled by hook.  
-
-
-useEffect(() => {
-  if (gameStarted) fetchMovies();
-}, [page, gameStarted]);
-
-useEffect(() => {
-  if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
-    setPage(prev => prev + 1);
-  }
-}, [currentIndex, movies.length, gameStarted]);
-
-
-
-const resetMyMatches = () => {
-  if (confirm("Vider l'historique ?")) {
-    localStorage.removeItem('myMatches');
-    setSavedMatches([]);
-    toast.success("Historique vidé");
-  }
-};
-
-useEffect(() => {
-  if (movies.length > 0 && currentIndex < movies.length) {
+  const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
-    // Only fetch providers if API key is present
-    if (API_KEY) {
-      axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
-        .then(response => {
-          const frData = response.data.results.FR;
-          setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
-        })
-        .catch(err => console.error(err));
-    }
-  }
-}, [currentIndex, movies]);
+    swipe(direction, currentMovie, userId);
+    setCurrentIndex((prev) => prev + 1);
+  };
 
-
-const handleAddFriend = async (targetUsername) => {
-  if (!user) return toast.error("Connectez-vous !");
-
-  try {
-    const { data: profiles, error: pError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', targetUsername)
-      .single();
-
-    if (pError || !profiles) return toast.error("Utilisateur introuvable.");
-
-    const { error: fError } = await supabase
-      .from('friendships')
-      .insert({ user_id: user.id, friend_id: profiles.id });
-
-    if (fError) {
-      if (fError.code === '23505') toast("Déjà demandé ou amis !");
-      else throw fError;
+  const toggleGenre = (id) => {
+    let newGenres;
+    if (selectedGenre.includes(id)) {
+      newGenres = selectedGenre.filter(g => g !== id);
     } else {
-      toast.success(`Demande envoyée à ${targetUsername} !`);
+      newGenres = [...selectedGenre, id];
     }
-  } catch (err) {
-    console.error(err);
-    alert("Erreur lors de l'ajout.");
-  }
-};
+    updateSettings({ genre: newGenres });
+  };
 
-const handleInviteFriend = (friendProfile) => {
-  inviteFriend(friendProfile);
-};
+  // Side effect to update view when entering room
+  useEffect(() => {
+    if (isInRoom) setView("lobby");
+  }, [isInRoom]);
 
-// --- RENDER ---
+  // Clean up socket listeners is handled by hook.  
 
-const renderModal = () => {
-  if (!detailsMovie) return null;
 
-  const libraryItem = savedMatches.find(m => m.id === detailsMovie.id);
-  // Handle legacy number format (assume 'to_watch') or object format
-  const currentStatus = libraryItem ? (typeof libraryItem === 'number' ? 'to_watch' : libraryItem.status) : null;
+  useEffect(() => {
+    if (gameStarted) fetchMovies();
+  }, [page, gameStarted]);
+
+  useEffect(() => {
+    if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
+      setPage(prev => prev + 1);
+    }
+  }, [currentIndex, movies.length, gameStarted]);
+
+
+
+  const resetMyMatches = () => {
+    if (confirm("Vider l'historique ?")) {
+      localStorage.removeItem('myMatches');
+      setSavedMatches([]);
+      toast.success("Historique vidé");
+    }
+  };
+
+  useEffect(() => {
+    if (movies.length > 0 && currentIndex < movies.length) {
+      const currentMovie = movies[currentIndex];
+      // Only fetch providers if API key is present
+      if (API_KEY) {
+        axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
+          .then(response => {
+            const frData = response.data.results.FR;
+            setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
+          })
+          .catch(err => console.error(err));
+      }
+    }
+  }, [currentIndex, movies]);
+
+
+  const handleAddFriend = async (targetUsername) => {
+    if (!user) return toast.error("Connectez-vous !");
+
+    try {
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', targetUsername)
+        .single();
+
+      if (pError || !profiles) return toast.error("Utilisateur introuvable.");
+
+      const { error: fError } = await supabase
+        .from('friendships')
+        .insert({ user_id: user.id, friend_id: profiles.id });
+
+      if (fError) {
+        if (fError.code === '23505') toast("Déjà demandé ou amis !");
+        else throw fError;
+      } else {
+        toast.success(`Demande envoyée à ${targetUsername} !`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'ajout.");
+    }
+  };
+
+  const handleInviteFriend = (friendProfile) => {
+    inviteFriend(friendProfile);
+  };
+
+  // --- RENDER ---
+
+  const renderModal = () => {
+    if (!detailsMovie) return null;
+
+    const libraryItem = savedMatches.find(m => m.id === detailsMovie.id);
+    // Handle legacy number format (assume 'to_watch') or object format
+    const currentStatus = libraryItem ? (typeof libraryItem === 'number' ? 'to_watch' : libraryItem.status) : null;
+
+    return (
+      <MovieDetailModal
+        movie={detailsMovie}
+        onClose={() => setDetailsMovie(null)}
+        currentStatus={currentStatus}
+        onUpdateStatus={updateMovieStatus}
+      />
+    );
+  };
 
   return (
-    <MovieDetailModal
-      movie={detailsMovie}
-      onClose={() => setDetailsMovie(null)}
-      currentStatus={currentStatus}
-      onUpdateStatus={updateMovieStatus}
-    />
-  );
-};
+    <>
+      <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
+      {renderModal()}
 
-return (
-  <>
-    <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
-    {renderModal()}
-
-    {match ? (
-      <div className="match-overlay">
-        <h1 className="match-title">IT'S A MATCH!</h1>
-        {match.moviePoster && (
-          <img
-            src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
-            alt={match.movieTitle}
-            className="match-poster clickable"
-            onClick={() => setDetailsMovie({
-              id: match.movieId,
-              title: match.movieTitle,
-              poster_path: match.moviePoster,
-              overview: match.overview
-            })}
+      {match ? (
+        <div className="match-overlay">
+          <h1 className="match-title">IT'S A MATCH!</h1>
+          {match.moviePoster && (
+            <img
+              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
+              alt={match.movieTitle}
+              className="match-poster clickable"
+              onClick={() => setDetailsMovie({
+                id: match.movieId,
+                title: match.movieTitle,
+                poster_path: match.moviePoster,
+                overview: match.overview
+              })}
+            />
+          )}
+          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+          <h2>{match.movieTitle}</h2>
+          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
+        </div>
+      ) : isInRoom && !gameStarted ? (
+        showGenreSelector ? (
+          <GenreSelector
+            selectedGenre={selectedGenre}
+            toggleGenre={toggleGenre}
+            onValidate={() => setShowGenreSelector(false)}
           />
-        )}
-        <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
-        <h2>{match.movieTitle}</h2>
-        <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
-      </div>
-    ) : isInRoom && !gameStarted ? (
-      showGenreSelector ? (
-        <GenreSelector
-          selectedGenre={selectedGenre}
-          toggleGenre={toggleGenre}
-          onValidate={() => setShowGenreSelector(false)}
+        ) : (
+          <Lobby
+            room={room}
+            playerCount={playerCount}
+            players={players}
+            currentUser={user}
+            isHost={isHost}
+            onAddFriend={handleAddFriend}
+            settings={{
+              providers: selectedProviders,
+              voteMode: voteMode,
+              rating: minRating,
+              genre: selectedGenre
+            }}
+            updateSettings={updateSettings}
+            startGame={startGame}
+            leaveRoom={leaveRoom}
+            shareCode={async () => {
+              if (navigator.share) {
+                await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
+              } else {
+                await navigator.clipboard.writeText(room);
+                alert("Code copié !");
+              }
+            }}
+            onOpenGenreSelector={() => setShowGenreSelector(true)}
+          />
+        )
+      ) : !isInRoom ? (
+        <WelcomeScreen
+          user={user}
+          view={view}
+          setView={setView}
+          room={room}
+          setRoom={setRoom}
+          generateRoomCode={generateRoomCode}
+          joinLobby={joinLobby}
+          showAuthModal={showAuthModal}
+          setShowAuthModal={setShowAuthModal}
+          showFriends={showFriends}
+          setShowFriends={setShowFriends}
+          showMyMatches={showMyMatches}
+          setShowMyMatches={setShowMyMatches}
+          savedMatches={savedMatches}
+          resetMyMatches={resetMyMatches}
+          setDetailsMovie={setDetailsMovie}
+          updateMovieStatus={updateMovieStatus}
+          removeMovie={removeMovie}
+          bulkUpdateMovieStatus={bulkUpdateMovieStatus}
+          bulkRemoveMovies={bulkRemoveMovies}
+          friendLibraryTarget={friendLibraryTarget}
+          setFriendLibraryTarget={setFriendLibraryTarget}
+          handleInviteFriend={handleInviteFriend}
+          isInRoom={isInRoom}
         />
       ) : (
-        <Lobby
-          room={room}
-          playerCount={playerCount}
-          players={players}
-          currentUser={user}
-          isHost={isHost}
-          onAddFriend={handleAddFriend}
-          settings={{
-            providers: selectedProviders,
-            voteMode: voteMode,
-            rating: minRating,
-            genre: selectedGenre
-          }}
-          updateSettings={updateSettings}
-          startGame={startGame}
+        <SwipeDeck
+          movies={movies}
+          currentIndex={currentIndex}
+          handleSwipe={handleSwipe}
+          setDetailsMovie={setDetailsMovie}
           leaveRoom={leaveRoom}
-          shareCode={async () => {
-            if (navigator.share) {
-              await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
-            } else {
-              await navigator.clipboard.writeText(room);
-              alert("Code copié !");
-            }
-          }}
-          onOpenGenreSelector={() => setShowGenreSelector(true)}
+          providersDisplay={providersDisplay}
         />
-      )
-    ) : !isInRoom ? (
-      <WelcomeScreen
-        user={user}
-        view={view}
-        setView={setView}
-        room={room}
-        setRoom={setRoom}
-        generateRoomCode={generateRoomCode}
-        joinLobby={joinLobby}
-        showAuthModal={showAuthModal}
-        setShowAuthModal={setShowAuthModal}
-        showFriends={showFriends}
-        setShowFriends={setShowFriends}
-        showMyMatches={showMyMatches}
-        setShowMyMatches={setShowMyMatches}
-        savedMatches={savedMatches}
-        resetMyMatches={resetMyMatches}
-        setDetailsMovie={setDetailsMovie}
-        updateMovieStatus={updateMovieStatus}
-        removeMovie={removeMovie}
-        bulkUpdateMovieStatus={bulkUpdateMovieStatus}
-        bulkRemoveMovies={bulkRemoveMovies}
-        friendLibraryTarget={friendLibraryTarget}
-        setFriendLibraryTarget={setFriendLibraryTarget}
-        handleInviteFriend={handleInviteFriend}
-        isInRoom={isInRoom}
-      />
-    ) : (
-      <SwipeDeck
-        movies={movies}
-        currentIndex={currentIndex}
-        handleSwipe={handleSwipe}
-        setDetailsMovie={setDetailsMovie}
-        leaveRoom={leaveRoom}
-        providersDisplay={providersDisplay}
-      />
-    )}
-  </>
-);
+      )}
+    </>
+  );
 
-export default App;
+  export default App;
