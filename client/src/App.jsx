@@ -2,44 +2,24 @@ import { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
 import './App.css';
-import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Analytics } from "@vercel/analytics/react";
 
-const SOCKET_URL = import.meta.env.MODE === 'development' 
-  ? "http://localhost:3001" 
+// Components
+import MovieDetailModal from './components/MovieDetailModal';
+import GenreSelector from './components/GenreSelector';
+import Lobby from './components/Lobby';
+import SwipeDeck from './components/SwipeDeck';
+import ResultsView from './components/ResultsView';
+
+// Constants
+import { GENRES_LIST } from './constants';
+
+const SOCKET_URL = import.meta.env.MODE === 'development'
+  ? "http://localhost:3001"
   : "https://moviematch-backend-0om3.onrender.com";
 
 const socket = io.connect(SOCKET_URL);
-const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
-
-// Logos officiels (App Store links pour éviter les liens cassés)
-const PLATFORMS = [
-  { id: 8, name: "Netflix", logo: "https://media.themoviedb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
-  { id: 337, name: "Disney+", logo: "https://media.themoviedb.org/t/p/original/97yvRBw1GzX7fXprcF80er19ot.jpg" },
-  { id: 119, name: "Amazon Prime", logo: "https://media.themoviedb.org/t/p/original/pvske1MyAoymrs5bguRfVqYiM9a.jpg" }, // Lien corrigé
-  { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/geOzgeKZWpZC3lymAVEHVIk3X0q.jpg" } // Lien corrigé
-];
-
-const GENRES_LIST = [
-  { id: 28, name: "Action" },
-  { id: 12, name: "Aventure" },
-  { id: 16, name: "Animation" },
-  { id: 35, name: "Comédie" },
-  { id: 80, name: "Crime" },
-  { id: 99, name: "Documentaire" },
-  { id: 18, name: "Drame" },
-  { id: 10751, name: "Famille" },
-  { id: 14, name: "Fantastique" },
-  { id: 36, name: "Histoire" },
-  { id: 27, name: "Horreur" },
-  { id: 10402, name: "Musique" },
-  { id: 9648, name: "Mystère" },
-  { id: 10749, name: "Romance" },
-  { id: 878, name: "Sci-Fi" },
-  { id: 53, name: "Thriller" },
-  { id: 10752, name: "Guerre" },
-  { id: 37, name: "Western" }
-];
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const getUserId = () => {
   let id = localStorage.getItem('userId');
@@ -50,106 +30,6 @@ const getUserId = () => {
   return id;
 };
 
-// --- COMPOSANT : MODALE DE DÉTAILS ---
-const MovieDetailModal = ({ movie, onClose }) => {
-  const [fullDetails, setFullDetails] = useState(null);
-
-  useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`)
-      .then(res => setFullDetails(res.data))
-      .catch(err => console.error(err));
-  }, [movie.id]);
-
-  if (!fullDetails) return <div className="modal-overlay">Chargement...</div>;
-
-  const title = fullDetails.title;
-  const posterSrc = fullDetails.poster_path ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}` : "";
-  
-  const trailer = fullDetails.videos?.results?.find(
-    vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
-  );
-
-  const cast = fullDetails.credits?.cast?.slice(0, 5) || [];
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <motion.div 
-        className="modal-content" 
-        onClick={(e) => e.stopPropagation()}
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-      >
-        <button className="close-modal" onClick={onClose}>✕</button>
-        
-        <div className="modal-scroll">
-          {trailer ? (
-            <div className="video-container">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}`}
-                title="Trailer"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          ) : (
-            <img src={posterSrc} alt={title} className="modal-poster" />
-          )}
-
-          <div className="modal-text">
-            <h2>{title}</h2>
-            <div className="meta-tags">
-               {fullDetails.release_date && <span className="tag">{fullDetails.release_date.split('-')[0]}</span>}
-               {fullDetails.runtime && <span className="tag">{fullDetails.runtime} min</span>}
-               <span className="tag star">★ {fullDetails.vote_average?.toFixed(1)}</span>
-            </div>
-            <p className="modal-overview">{fullDetails.overview || "Pas de description."}</p>
-            {cast.length > 0 && (
-              <div className="cast-section">
-                <h3>Casting</h3>
-                <div className="cast-list">
-                  {cast.map(actor => (
-                    <div key={actor.id} className="actor-item">
-                      <img 
-                        src={actor.profile_path 
-                          ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` 
-                          : "https://via.placeholder.com/100x150?text=?"} 
-                        alt={actor.name} 
-                      />
-                      <span>{actor.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// --- COMPOSANT : ITEM MATCH ---
-const MatchItem = ({ movieId, onClick }) => {
-  const [movieData, setMovieData] = useState(null);
-  
-  useEffect(() => {
-    axios.get(`https://api.themoviedb.org/3/movie/${movieId}?api_key=${API_KEY}&language=fr-FR`)
-      .then(res => setMovieData(res.data))
-      .catch(err => console.error(err));
-  }, [movieId]);
-
-  if (!movieData) return <div className="mini-card">...</div>;
-
-  return (
-    <div className="mini-card clickable" onClick={() => onClick(movieData)}>
-      <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
-      <h3>{movieData.title}</h3>
-    </div>
-  );
-};
-
-// --- APPLICATION PRINCIPALE ---
 function App() {
   const [room, setRoom] = useState("");
   const [isInRoom, setIsInRoom] = useState(false);
@@ -158,15 +38,17 @@ function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [match, setMatch] = useState(null);
   const [page, setPage] = useState(1);
-  const [view, setView] = useState("menu"); 
+  const [view, setView] = useState("menu");
   const [showMyMatches, setShowMyMatches] = useState(false);
+
+  // Settings State
   const [selectedGenre, setSelectedGenre] = useState([]);
   const [showGenreSelector, setShowGenreSelector] = useState(false);
   const [minRating, setMinRating] = useState(0);
-  const [selectedProviders, setSelectedProviders] = useState([]); 
-  const [voteMode, setVoteMode] = useState('majority'); 
-  const [showHostSettings, setShowHostSettings] = useState(false);
-  const [providersDisplay, setProvidersDisplay] = useState([]); 
+  const [selectedProviders, setSelectedProviders] = useState([]);
+  const [voteMode, setVoteMode] = useState('majority');
+
+  const [providersDisplay, setProvidersDisplay] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
   const userId = useRef(getUserId()).current;
@@ -176,14 +58,16 @@ function App() {
   });
   const [detailsMovie, setDetailsMovie] = useState(null);
 
+  // --- SOCKET & GAME LOGIC ---
+
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
     if (targetRoom !== "") {
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const randomPage = (seed % 30) + 1; 
+      const randomPage = (seed % 30) + 1;
       setPage(randomPage);
 
-      if (isHost || roomCodeToJoin) { 
+      if (isHost || roomCodeToJoin) {
         socket.emit("create_room", targetRoom);
         setIsInRoom(true);
         setGameStarted(false);
@@ -210,7 +94,7 @@ function App() {
     }
     setRoom(result);
     setIsHost(true);
-    joinLobby(result); 
+    joinLobby(result);
   };
 
   const syncSettings = (updates) => {
@@ -233,16 +117,6 @@ function App() {
     });
   };
 
-  const toggleProvider = (id) => {
-    let newProviders;
-    if (selectedProviders.includes(id)) {
-      newProviders = selectedProviders.filter(p => p !== id);
-    } else {
-      newProviders = [...selectedProviders, id];
-    }
-    syncSettings({ providers: newProviders });
-  };
-
   const toggleGenre = (id) => {
     let newGenres;
     if (selectedGenre.includes(id)) {
@@ -250,15 +124,18 @@ function App() {
     } else {
       newGenres = [...selectedGenre, id];
     }
-    setSelectedGenre(newGenres);
     syncSettings({ genre: newGenres });
   };
 
   const fetchMovies = async () => {
+    if (!API_KEY) {
+      console.error("API Key missing");
+      return;
+    }
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
-    
+
     if (selectedGenre.length > 0) {
-      endpoint += `&with_genres=${selectedGenre.join(',')}`; 
+      endpoint += `&with_genres=${selectedGenre.join(',')}`;
     }
     endpoint += `&watch_region=FR&primary_release_date.lte=${new Date().toISOString().split('T')[0]}`;
     if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
@@ -272,13 +149,13 @@ function App() {
 
     try {
       const response = await axios.get(endpoint);
-      const newMovies = response.data.results; 
-      
+      const newMovies = response.data.results;
+
       if (newMovies.length === 0 && page < 500) {
         setPage(prev => prev + 1);
       } else {
         setMovies(newMovies);
-        setCurrentIndex(0); 
+        setCurrentIndex(0);
       }
     } catch (error) {
       console.error("Erreur API:", error);
@@ -314,7 +191,7 @@ function App() {
 
   useEffect(() => {
     if (gameStarted) fetchMovies();
-  }, [page, gameStarted]); 
+  }, [page, gameStarted]);
 
   useEffect(() => {
     if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
@@ -323,7 +200,7 @@ function App() {
   }, [currentIndex, movies.length, gameStarted]);
 
   const startGame = () => socket.emit("start_game", room);
-  
+
   const leaveRoom = () => {
     setIsInRoom(false);
     setGameStarted(false);
@@ -333,8 +210,7 @@ function App() {
     setRoom("");
     setView("menu");
     setIsHost(false);
-    setShowHostSettings(false); 
-    window.location.reload(); 
+    window.location.reload();
   };
 
   const shareCode = async () => {
@@ -349,9 +225,9 @@ function App() {
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
     if (direction === "right") {
-      socket.emit("swipe_right", { 
-        room, 
-        movieId: currentMovie.id, 
+      socket.emit("swipe_right", {
+        room,
+        movieId: currentMovie.id,
         movieTitle: currentMovie.title,
         moviePoster: currentMovie.poster_path,
         overview: currentMovie.overview,
@@ -361,16 +237,8 @@ function App() {
     setCurrentIndex((prev) => prev + 1);
   };
 
-  const x = useMotionValue(0);
-  const rotate = useTransform(x, [-200, 200], [-30, 30]);
-  const opacity = useTransform(x, [-150, 0, 150], [0.5, 1, 0.5]);
-  const handleDragEnd = (event, info) => {
-    if (info.offset.x > 100) handleSwipe("right");
-    else if (info.offset.x < -100) handleSwipe("left");
-  };
-
   const resetMyMatches = () => {
-    if(confirm("Vider l'historique ?")) {
+    if (confirm("Vider l'historique ?")) {
       localStorage.removeItem('myMatches');
       setSavedMatches([]);
     }
@@ -379,17 +247,20 @@ function App() {
   useEffect(() => {
     if (movies.length > 0 && currentIndex < movies.length) {
       const currentMovie = movies[currentIndex];
-      axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
-        .then(response => {
-          const frData = response.data.results.FR;
-          setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
-        })
-        .catch(err => console.error(err));
+      // Only fetch providers if API key is present
+      if (API_KEY) {
+        axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
+          .then(response => {
+            const frData = response.data.results.FR;
+            setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
+          })
+          .catch(err => console.error(err));
+      }
     }
   }, [currentIndex, movies]);
 
 
-  // --- AFFICHAGE ---
+  // --- RENDER ---
 
   const renderModal = () => {
     if (!detailsMovie) return null;
@@ -398,23 +269,15 @@ function App() {
 
   if (showMyMatches) {
     return (
-      <div className="matches-screen">
-        {renderModal()} 
-        <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
-        <h2>Mes Matchs</h2>
-        {savedMatches.length > 0 && (
-          <button onClick={resetMyMatches} className="btn-reset">🗑️ Réinitialiser</button>
-        )}
-        <div className="matches-grid">
-          {savedMatches.map(id => (
-            <MatchItem 
-              key={id} 
-              movieId={id} 
-              onClick={(movie) => setDetailsMovie(movie)} 
-            />
-          ))}
-        </div>
-      </div>
+      <>
+        {renderModal()}
+        <ResultsView
+          savedMatches={savedMatches}
+          onClose={() => setShowMyMatches(false)}
+          resetMyMatches={resetMyMatches}
+          onDetails={(movieData) => setDetailsMovie(movieData)}
+        />
+      </>
     );
   }
 
@@ -425,13 +288,13 @@ function App() {
         <div className="match-overlay">
           <h1 className="match-title">IT'S A MATCH!</h1>
           {match.moviePoster && (
-            <img 
-              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`} 
-              alt={match.movieTitle} 
-              className="match-poster clickable" 
-              onClick={() => setDetailsMovie({ 
-                id: match.movieId, 
-                title: match.movieTitle, 
+            <img
+              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
+              alt={match.movieTitle}
+              className="match-poster clickable"
+              onClick={() => setDetailsMovie({
+                id: match.movieId,
+                title: match.movieTitle,
                 poster_path: match.moviePoster,
                 overview: match.overview
               })}
@@ -445,152 +308,35 @@ function App() {
     );
   }
 
-  // --- LOBBY ---
+  // --- LOBBY & GENRE ---
   if (isInRoom && !gameStarted) {
-    // ÉCRAN DE SÉLECTION DES GENRES (Page dédiée)
     if (showGenreSelector) {
       return (
-        <div className="welcome-screen">
-          <h2>Choisis tes styles</h2>
-          <p style={{color: '#888', marginBottom: '20px'}}>
-            {selectedGenre.length === 0 ? "Tous les genres" : `${selectedGenre.length} sélectionné(s)`}
-          </p>
-          
-          <div className="genre-grid-container">
-            {GENRES_LIST.map((genre) => {
-              const isActive = selectedGenre.includes(genre.id);
-              return (
-                <div 
-                  key={genre.id} 
-                  className={`genre-box ${isActive ? 'active' : ''}`}
-                  onClick={() => toggleGenre(genre.id)}
-                >
-                  {genre.name}
-                </div>
-              );
-            })}
-          </div>
-
-          <button 
-            className="unified-btn validate" 
-            style={{marginTop: '20px'}} 
-            onClick={() => setShowGenreSelector(false)}
-          >
-            Valider les genres
-          </button>
-        </div>
+        <GenreSelector
+          selectedGenre={selectedGenre}
+          toggleGenre={toggleGenre}
+          onValidate={() => setShowGenreSelector(false)}
+        />
       );
     }
 
-    // ÉCRAN LOBBY NORMAL
     return (
-      <div className="welcome-screen">
-        <h1>Salle d'attente</h1>
-        
-        <div className="room-code-display" onClick={shareCode}>
-          <h2 className="code-text">{room}</h2>
-          <span className="click-hint">Toucher pour copier</span>
-        </div>
-        <p style={{color: '#aaa', marginBottom: '20px'}}>
-          Joueurs : <strong style={{color: 'white', fontSize: '1.2rem'}}>{playerCount}</strong>
-        </p>
-
-        {isHost ? (
-          <>
-            {!showHostSettings ? (
-              <div className="host-lobby-menu">
-                <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
-                  Paramètres de la partie
-                </button>
-                <div style={{height: '15px'}}></div>
-                <button className="unified-btn primary" onClick={startGame}>
-                  LANCER LA PARTIE
-                </button>
-              </div>
-            ) : (
-              <div className="room-settings">
-                <h3>Paramètres</h3>
-                
-                <label>Vos Abonnements :</label>
-                <div className="providers-select">
-                  {PLATFORMS.map(p => (
-                    <div 
-                      key={p.id} 
-                      className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
-                      onClick={() => toggleProvider(p.id)}
-                    >
-                      <img src={p.logo} alt={p.name} />
-                    </div>
-                  ))}
-                </div>
-
-                {playerCount > 1 ? (
-                  <>
-                    <label>Mode de vote :</label>
-                    <div className="vote-mode-selector">
-                      <button 
-                        className={voteMode === 'majority' ? 'mode-active' : ''} 
-                        onClick={() => syncSettings({voteMode: 'majority'})}
-                      >
-                        Majorité (50%)
-                      </button>
-                      <button 
-                        className={voteMode === 'unanimity' ? 'mode-active' : ''} 
-                        onClick={() => syncSettings({voteMode: 'unanimity'})}
-                      >
-                        Unanimité (100%)
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div className="solo-mode-badge">
-                    Mode Découverte (Solo)
-                  </div>
-                )}
-
-                <label>Genre & Qualité :</label>
-                <div className="filters-row-vertical">
-                  <button 
-                    className="unified-btn secondary" 
-                    onClick={() => setShowGenreSelector(true)}
-                    style={{ marginBottom: '10px' }}
-                  >
-                    {selectedGenre.length > 0 
-                      ? `Genres : ${selectedGenre.length} choisi(s)` 
-                      : "Choisir les genres (Tous)"} ✏️
-                  </button>
-                  <select value={minRating} onChange={(e) => syncSettings({rating: e.target.value})}>
-                    <option value="0">Toute Note</option>
-                    <option value="7">7+ (Bon)</option>
-                    <option value="8">8+ (Top)</option>
-                  </select>
-                </div>
-
-                <button className="unified-btn validate" style={{marginTop: '20px'}} onClick={() => setShowHostSettings(false)}>
-                  Valider et Retour
-                </button>
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="waiting-box">
-            <p className="pulse">En attente de l'hôte...</p>
-            <div className="guest-settings-preview">
-               <small>
-                 {playerCount > 1 
-                   ? `Mode: ${voteMode === 'majority' ? 'Majorité' : 'Unanimité'}` 
-                   : 'Mode Solo'}
-               </small>
-               <br/>
-               <small>Plateformes: {selectedProviders.length > 0 ? selectedProviders.length + ' choisies' : 'Toutes'}</small>
-            </div>
-          </div>
-        )}
-        
-        {!showHostSettings && (
-          <button className="unified-btn quit" style={{marginTop: '15px'}} onClick={leaveRoom}>Quitter</button>
-        )}
-      </div>
+      <Lobby
+        room={room}
+        playerCount={playerCount}
+        isHost={isHost}
+        settings={{
+          providers: selectedProviders,
+          voteMode: voteMode,
+          rating: minRating,
+          genre: selectedGenre
+        }}
+        updateSettings={syncSettings}
+        startGame={startGame}
+        leaveRoom={leaveRoom}
+        shareCode={shareCode}
+        onOpenGenreSelector={() => setShowGenreSelector(true)}
+      />
     );
   }
 
@@ -616,43 +362,18 @@ function App() {
     );
   }
 
-  if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement...</h2></div>;
-  const movie = movies[currentIndex];
-
+  // --- GAME ---
   return (
     <>
-      {renderModal()} 
-
-      <div className="card-container">
-        <button className="btn-quit" onClick={leaveRoom}>Quitter</button>
-        
-        <motion.div 
-          className="movie-card"
-          drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
-          style={{ x, rotate, opacity }}
-          initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-        >
-          <div className="movie-poster-wrapper" onClick={() => setDetailsMovie(movie)}>
-             <img className="movie-poster clickable" src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} draggable="false" />
-             <div className="info-hint">ℹ️ Infos + Trailer</div>
-          </div>
-          
-          <div className="movie-info">
-            <div className="providers-container">
-              {providersDisplay.map((p) => (
-                <img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo" />
-              ))}
-            </div>
-            <h2>{movie.title}</h2>
-          </div>
-          
-          <div className="actions">
-            <button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
-            <button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
-          </div>
-        </motion.div>
-        <Analytics />
-      </div>
+      {renderModal()}
+      <SwipeDeck
+        movies={movies}
+        currentIndex={currentIndex}
+        handleSwipe={handleSwipe}
+        setDetailsMovie={setDetailsMovie}
+        leaveRoom={leaveRoom}
+        providersDisplay={providersDisplay}
+      />
     </>
   );
 }
