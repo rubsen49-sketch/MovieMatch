@@ -32,26 +32,26 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 
 			if (error) throw error;
 
-			const myFriends = [];
-			const incoming = [];
-			const outgoing = [];
+			const uniqueFriends = new Map();
 
 			data.forEach(rel => {
 				if (rel.status === 'accepted') {
 					const isMeRequester = rel.user_id === currentUser.id;
-					myFriends.push(isMeRequester ? rel.friend : rel.user);
+					const friendProfile = isMeRequester ? rel.friend : rel.user;
+					// Deduplicate based on ID
+					if (!uniqueFriends.has(friendProfile.id)) {
+						uniqueFriends.set(friendProfile.id, { ...friendProfile, friendship_id: rel.id });
+					}
 				} else if (rel.status === 'pending') {
 					if (rel.friend_id === currentUser.id) {
-						// I am the target -> Incoming
 						incoming.push({ ...rel, other: rel.user });
 					} else {
-						// I am the sender -> Outgoing
 						outgoing.push({ ...rel, other: rel.friend });
 					}
 				}
 			});
 
-			setFriends(myFriends);
+			setFriends(Array.from(uniqueFriends.values()));
 			setIncomingRequests(incoming);
 			setOutgoingRequests(outgoing);
 
@@ -59,6 +59,20 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 			console.error("Error fetching relationships:", err);
 		}
 	};
+
+	const removeFriend = async (friendshipId, friendName) => {
+		if (!confirm(`Supprimer ${friendName} de vos amis ?`)) return;
+
+		try {
+			const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+			if (error) throw error;
+			fetchAllRelationships();
+		} catch (err) {
+			console.error(err);
+			setMessage("Erreur lors de la suppression");
+		}
+	};
+
 
 	// Debounced Search
 	useEffect(() => {
@@ -174,18 +188,27 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 							<p style={{ textAlign: 'center', color: '#666' }}>Vous n'avez pas encore d'amis.</p>
 						) : (
 							friends.map(friend => (
-								<div key={friend.id} className="mini-card" style={{ padding: 15, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-									<div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+								<div key={friend.id} className="mini-card friend-card">
+									<div className="friend-info">
 										<div className="checkbox-circle" style={{ background: 'var(--bg-card)', border: '1px solid #444' }}>👤</div>
-										<span style={{ color: 'white', fontWeight: 'bold' }}>{friend.username}</span>
+										<span className="friend-name">{friend.username}</span>
 									</div>
-									<button
-										className="unified-btn secondary"
-										style={{ width: 'auto', padding: '5px 15px', fontSize: '0.8rem' }}
-										onClick={() => onViewLibrary(friend)}
-									>
-										Voir Bibliothèque
-									</button>
+									<div className="friend-actions">
+										<button
+											className="unified-btn secondary btn-library"
+											onClick={() => onViewLibrary(friend)}
+										>
+											<span className="btn-text">Voir Bibliothèque</span>
+											<span className="btn-icon">📚</span>
+										</button>
+										<button
+											className="unified-btn delete-icon-btn"
+											onClick={() => removeFriend(friend.friendship_id, friend.username)}
+											title="Supprimer"
+										>
+											✕
+										</button>
+									</div>
 								</div>
 							))
 						)}
