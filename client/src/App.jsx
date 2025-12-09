@@ -84,17 +84,34 @@ function App() {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) syncLibraryWithCloud(session.user.id);
+      if (session?.user) {
+        syncLibraryWithCloud(session.user.id);
+        syncUserProfile(session.user);
+      }
     });
 
     // Listen for changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      if (session?.user) syncLibraryWithCloud(session.user.id);
+      if (session?.user) {
+        syncLibraryWithCloud(session.user.id);
+        syncUserProfile(session.user);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const syncUserProfile = async (currentUser) => {
+    const { error } = await supabase
+      .from('profiles')
+      .upsert({
+        id: currentUser.id,
+        username: currentUser.user_metadata?.username,
+        updated_at: new Date()
+      });
+    if (error) console.error("Profile sync error:", error);
+  };
 
   const syncLibraryWithCloud = async (userId) => {
     try {

@@ -60,18 +60,32 @@ const FriendsView = ({ onClose, currentUser }) => {
 		}
 	};
 
+	// Debounced Search
+	useEffect(() => {
+		const delayDebounceFn = setTimeout(() => {
+			if (searchQuery.trim()) {
+				searchUsers();
+			} else {
+				setSearchResults([]);
+			}
+		}, 500); // 500ms delay
+
+		return () => clearTimeout(delayDebounceFn);
+	}, [searchQuery]);
+
 	const searchUsers = async (e) => {
-		e.preventDefault();
+		if (e) e.preventDefault();
 		if (!searchQuery.trim()) return;
+
 		setLoading(true);
-		setSearchResults([]);
+		// setSearchResults([]); // Don't clear immediately to avoid flickering
 
 		try {
 			const { data, error } = await supabase
 				.from('profiles')
 				.select('id, username')
 				.ilike('username', `%${searchQuery}%`)
-				.neq('id', currentUser.id) // Don't find myself
+				.neq('id', currentUser.id)
 				.limit(10);
 
 			if (error) throw error;
@@ -161,17 +175,16 @@ const FriendsView = ({ onClose, currentUser }) => {
 				{/* --- AJOUTER --- */}
 				{activeTab === 'add' && (
 					<div className="input-group">
-						<form onSubmit={searchUsers} style={{ display: 'flex', gap: 10 }}>
+						<div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+							<span style={{ fontSize: '1.5rem' }}>🔎</span>
 							<input
 								type="text"
 								placeholder="Chercher un pseudo..."
 								value={searchQuery}
 								onChange={e => setSearchQuery(e.target.value)}
+								autoFocus
 							/>
-							<button className="unified-btn primary" type="submit" disabled={loading} style={{ width: 'auto' }}>
-								🔍
-							</button>
-						</form>
+						</div>
 
 						<div style={{ marginTop: 20 }}>
 							{searchResults.map(user => (
