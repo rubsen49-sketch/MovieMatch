@@ -10,7 +10,10 @@ const Lobby = ({
 	startGame,
 	leaveRoom,
 	shareCode,
-	onOpenGenreSelector
+	onOpenGenreSelector,
+	players,
+	currentUser,
+	onAddFriend
 }) => {
 	const [showHostSettings, setShowHostSettings] = useState(false);
 
