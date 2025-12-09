@@ -383,101 +383,103 @@ function App() {
       <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
       {renderModal()}
 
-      {match ? (
-        <div className="match-overlay">
-          <h1 className="match-title">IT'S A MATCH!</h1>
-          {match.moviePoster && (
-            <img
-              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
-              alt={match.movieTitle}
-              className="match-poster clickable"
-              onClick={() => setDetailsMovie({
-                id: match.movieId,
-                title: match.movieTitle,
-                poster_path: match.moviePoster,
-                overview: match.overview
-              })}
+      <main className="app-main">
+        {match ? (
+          <div className="match-overlay">
+            <h1 className="match-title">IT'S A MATCH!</h1>
+            {match.moviePoster && (
+              <img
+                src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
+                alt={match.movieTitle}
+                className="match-poster clickable"
+                onClick={() => setDetailsMovie({
+                  id: match.movieId,
+                  title: match.movieTitle,
+                  poster_path: match.moviePoster,
+                  overview: match.overview
+                })}
+              />
+            )}
+            <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+            <h2>{match.movieTitle}</h2>
+            <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
+          </div>
+        ) : isInRoom && !gameStarted ? (
+          showGenreSelector ? (
+            <GenreSelector
+              selectedGenre={selectedGenre}
+              toggleGenre={toggleGenre}
+              yearRange={yearRange}
+              setYearRange={setYearRange}
+              onValidate={() => setShowGenreSelector(false)}
             />
-          )}
-          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
-          <h2>{match.movieTitle}</h2>
-          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
-        </div>
-      ) : isInRoom && !gameStarted ? (
-        showGenreSelector ? (
-          <GenreSelector
-            selectedGenre={selectedGenre}
-            toggleGenre={toggleGenre}
-            yearRange={yearRange}
-            setYearRange={setYearRange}
-            onValidate={() => setShowGenreSelector(false)}
+          ) : (
+            <Lobby
+              room={room}
+              playerCount={playerCount}
+              players={players}
+              currentUser={user}
+              isHost={isHost}
+              onAddFriend={handleAddFriend}
+              settings={{
+                providers: selectedProviders,
+                voteMode: voteMode,
+                rating: minRating,
+                genre: selectedGenre
+              }}
+              updateSettings={updateSettings}
+              startGame={startGame}
+              leaveRoom={leaveRoom}
+              shareCode={async () => {
+                if (navigator.share) {
+                  await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
+                } else {
+                  await navigator.clipboard.writeText(room);
+                  alert("Code copié !");
+                }
+              }}
+              onOpenGenreSelector={() => setShowGenreSelector(true)}
+            />
+          )
+        ) : !isInRoom ? (
+          <WelcomeScreen
+            user={user}
+            view={view}
+            setView={setView}
+            room={room}
+            setRoom={setRoom}
+            generateRoomCode={generateRoomCode}
+            joinLobby={joinLobby}
+            showAuthModal={showAuthModal}
+            setShowAuthModal={setShowAuthModal}
+            showFriends={showFriends}
+            setShowFriends={setShowFriends}
+            showMyMatches={showMyMatches}
+            setShowMyMatches={setShowMyMatches}
+            savedMatches={savedMatches}
+            resetMyMatches={resetMyMatches}
+            setDetailsMovie={setDetailsMovie}
+            updateMovieStatus={updateMovieStatus}
+            removeMovie={removeMovie}
+            bulkUpdateMovieStatus={bulkUpdateMovieStatus}
+            bulkRemoveMovies={bulkRemoveMovies}
+            friendLibraryTarget={friendLibraryTarget}
+            setFriendLibraryTarget={setFriendLibraryTarget}
+            handleInviteFriend={handleInviteFriend}
+            isInRoom={isInRoom}
           />
         ) : (
-          <Lobby
-            room={room}
-            playerCount={playerCount}
-            players={players}
-            currentUser={user}
-            isHost={isHost}
-            onAddFriend={handleAddFriend}
-            settings={{
-              providers: selectedProviders,
-              voteMode: voteMode,
-              rating: minRating,
-              genre: selectedGenre
-            }}
-            updateSettings={updateSettings}
-            startGame={startGame}
+          <SwipeDeck
+            movies={movies}
+            currentIndex={currentIndex}
+            handleSwipe={handleSwipe}
+            handleUndo={handleUndo}
+            setDetailsMovie={setDetailsMovie}
             leaveRoom={leaveRoom}
-            shareCode={async () => {
-              if (navigator.share) {
-                await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
-              } else {
-                await navigator.clipboard.writeText(room);
-                alert("Code copié !");
-              }
-            }}
-            onOpenGenreSelector={() => setShowGenreSelector(true)}
+            providersDisplay={providersDisplay}
           />
-        )
-      ) : !isInRoom ? (
-        <WelcomeScreen
-          user={user}
-          view={view}
-          setView={setView}
-          room={room}
-          setRoom={setRoom}
-          generateRoomCode={generateRoomCode}
-          joinLobby={joinLobby}
-          showAuthModal={showAuthModal}
-          setShowAuthModal={setShowAuthModal}
-          showFriends={showFriends}
-          setShowFriends={setShowFriends}
-          showMyMatches={showMyMatches}
-          setShowMyMatches={setShowMyMatches}
-          savedMatches={savedMatches}
-          resetMyMatches={resetMyMatches}
-          setDetailsMovie={setDetailsMovie}
-          updateMovieStatus={updateMovieStatus}
-          removeMovie={removeMovie}
-          bulkUpdateMovieStatus={bulkUpdateMovieStatus}
-          bulkRemoveMovies={bulkRemoveMovies}
-          friendLibraryTarget={friendLibraryTarget}
-          setFriendLibraryTarget={setFriendLibraryTarget}
-          handleInviteFriend={handleInviteFriend}
-          isInRoom={isInRoom}
-        />
-      ) : (
-        <SwipeDeck
-          movies={movies}
-          currentIndex={currentIndex}
-          handleSwipe={handleSwipe}
-          handleUndo={handleUndo}
-          setDetailsMovie={setDetailsMovie}
-          leaveRoom={leaveRoom}
-          providersDisplay={providersDisplay}
-        />
-      )}
+        )}
+      </main>
     </>
   );
 }

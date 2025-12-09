@@ -16,29 +16,29 @@ const GenreSelector = ({ selectedGenre, toggleGenre, onValidate, yearRange, setY
 			<h2>Filtres</h2>
 
 			{/* ANNEES */}
-			<div className="filter-section" style={{ width: '100%', maxWidth: '400px', marginBottom: '20px' }}>
-				<h3>Années</h3>
-				<div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'center' }}>
+			<div className="filter-section" style={{ width: '100%', marginBottom: '20px', textAlign: 'center' }}>
+				<h3 style={{ marginBottom: 10, color: 'var(--text-sub)' }}>Années de sortie</h3>
+				<div className="input-year-group">
 					<input
 						type="number"
 						min="1900" max={currentYear}
 						value={yearRange?.min || 1970}
 						onChange={(e) => handleYearChange('min', e.target.value)}
-						className="input-code" style={{ width: '80px', fontSize: '1rem' }}
+						className="input-year"
 					/>
-					<span>à</span>
+					<span style={{ color: '#666' }}>à</span>
 					<input
 						type="number"
 						min="1900" max={currentYear}
 						value={yearRange?.max || currentYear}
 						onChange={(e) => handleYearChange('max', e.target.value)}
-						className="input-code" style={{ width: '80px', fontSize: '1rem' }}
+						className="input-year"
 					/>
 				</div>
 			</div>
 
-			<p style={{ color: '#888', marginBottom: '10px' }}>
-				{selectedGenre.length === 0 ? "Tous les genres" : `${selectedGenre.length} genres`}
+			<p style={{ color: 'var(--text-sub)', marginBottom: '15px', fontSize: '0.9rem' }}>
+				{selectedGenre.length === 0 ? "Tous les genres sélectionnés" : `${selectedGenre.length} genres sélectionnés`}
 			</p>
 
 			<div className="genre-grid-container">

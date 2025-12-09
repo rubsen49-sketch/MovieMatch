@@ -98,18 +98,26 @@ const WelcomeScreen = ({
 			</div>
 
 			<h1>Movie Match 🍿</h1>
+			<p className="welcome-sub">Trouvez le film parfait ce soir, ensemble ou en solo.</p>
+
 			{view === "menu" && (
 				<div className="menu-buttons">
-					<button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
-					<button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
-					<button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
+					<button className="unified-btn primary" onClick={generateRoomCode}>
+						<span>✨</span> Créer une salle
+					</button>
+					<button className="unified-btn secondary" onClick={() => setView("join")}>
+						<span>🚀</span> Rejoindre
+					</button>
+					<button onClick={() => setShowMyMatches(true)} style={{ background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline', marginTop: '20px', cursor: 'pointer' }}>
+						Voir mes matchs
+					</button>
 				</div>
 			)}
 			{view === "join" && (
-				<div className="input-group">
-					<input type="text" placeholder="Code..." value={room} onChange={(e) => setRoom(e.target.value.toUpperCase())} />
-					<button className="unified-btn primary" onClick={() => joinLobby(null)}>Valider</button>
-					<button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
+				<div className="menu-buttons fade-in">
+					<input type="text" placeholder="CODE DE LA SALLE" value={room} onChange={(e) => setRoom(e.target.value.toUpperCase())} style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '2px', textTransform: 'uppercase' }} />
+					<button className="unified-btn primary" onClick={() => joinLobby(null)}>Rejoindre</button>
+					<button className="unified-btn secondary" onClick={() => setView("menu")}>Annuler</button>
 				</div>
 			)}
 

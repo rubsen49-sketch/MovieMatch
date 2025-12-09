@@ -110,32 +110,31 @@ const Lobby = ({
 	}
 
 	return (
-		<div className="welcome-screen">
-			<h1>Salle d'attente</h1>
+		<div className="lobby-container fade-in">
+			<h1 style={{ textAlign: 'center', fontSize: '2rem' }}>Salle d'attente</h1>
 
-			<div className="room-code-display" onClick={shareCode}>
-				<h2 className="code-text">{room}</h2>
+			<div className="room-code-box" onClick={shareCode}>
+				<h2 className="code-display">{room}</h2>
 				<span className="click-hint">Toucher pour copier</span>
 			</div>
-			<p style={{ color: '#aaa', marginBottom: '20px' }}>
-				Joueurs : <strong style={{ color: 'white', fontSize: '1.2rem' }}>{playerCount}</strong>
+
+			<p style={{ textAlign: 'center', color: 'var(--text-sub)', marginBottom: '10px' }}>
+				{playerCount} Joueur{playerCount > 1 ? 's' : ''} connecté{playerCount > 1 ? 's' : ''}
 			</p>
 
 			{/* PLAYER LIST */}
-			<div className="player-list" style={{ display: 'flex', flexDirection: 'column', gap: 5, maxWidth: 300, margin: '10px auto 20px auto' }}>
+			<div className="player-list" style={{ display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 400, margin: '0 auto 20px auto', width: '100%' }}>
 				{(players || []).map(p => {
 					// Check if it's me
 					const isMe = currentUser && currentUser.user_metadata?.username === p.username;
-					// If not logged in, currentUser is null.
-					// If p is me, don't show add button.
 
 					return (
-						<div key={p.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 10px', borderRadius: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<span>👤 {p.username}</span>
+						<div key={p.id} className="player-list-item">
+							<span style={{ fontWeight: 'bold' }}>👤 {p.username}</span>
 							{!isMe && currentUser && onAddFriend && (
 								<button
 									className="unified-btn secondary"
-									style={{ padding: '2px 8px', fontSize: '0.8rem', width: 'auto' }}
+									style={{ padding: '5px 10px', fontSize: '0.7rem', width: 'auto', borderRadius: '20px' }}
 									onClick={() => onAddFriend(p.username)}
 								>
 									+ Ami
@@ -147,13 +146,12 @@ const Lobby = ({
 			</div>
 
 			{isHost ? (
-				<div className="host-lobby-menu">
-					<button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
-						Paramètres de la partie
+				<div className="host-lobby-menu" style={{ marginTop: 'auto' }}>
+					<button className="unified-btn secondary" onClick={() => setShowHostSettings(true)} style={{ marginBottom: '10px' }}>
+						⚙️ Paramètres
 					</button>
-					<div style={{ height: '15px' }}></div>
 					<button className="unified-btn primary" onClick={startGame}>
-						LANCER LA PARTIE
+						LANCER LA PARTIE 🎬
 					</button>
 				</div>
 			) : (
@@ -171,7 +169,7 @@ const Lobby = ({
 				</div>
 			)}
 
-			<button className="unified-btn quit" style={{ marginTop: '15px' }} onClick={leaveRoom}>Quitter</button>
+			<button className="unified-btn secondary" style={{ marginTop: '10px', background: 'transparent', border: 'none', color: '#666' }} onClick={leaveRoom}>Quitter</button>
 		</div>
 	);
 };
