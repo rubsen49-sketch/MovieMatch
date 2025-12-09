@@ -16,6 +16,7 @@ import FriendsView from './components/FriendsView';
 // ... (existing imports)
 
 import { supabase } from './supabaseClient';
+import { syncUserProfile, syncLibraryWithCloud, saveToCloud } from './services/syncService';
 
 // Constants
 import { GENRES_LIST } from './constants';
@@ -80,6 +81,8 @@ function App() {
 
   // --- SUPABASE AUTH & SYNC ---
   const [user, setUser] = useState(null);
+  const userRef = useRef(user);
+  useEffect(() => { userRef.current = user; }, [user]);
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [friendLibraryTarget, setFriendLibraryTarget] = useState(null);
@@ -90,8 +93,11 @@ function App() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        syncLibraryWithCloud(session.user.id);
         syncUserProfile(session.user);
+        syncLibraryWithCloud(session.user).then(merged => {
+          setSavedMatches(merged);
+          localStorage.setItem('myMatches', JSON.stringify(merged));
+        });
       }
     });
 
@@ -99,73 +105,18 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        syncLibraryWithCloud(session.user.id);
         syncUserProfile(session.user);
+        syncLibraryWithCloud(session.user).then(merged => {
+          setSavedMatches(merged);
+          localStorage.setItem('myMatches', JSON.stringify(merged));
+        });
       }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  const syncUserProfile = async (currentUser) => {
-    const { error } = await supabase
-      .from('profiles')
-      .upsert({
-        id: currentUser.id,
-        username: currentUser.user_metadata?.username,
-        updated_at: new Date()
-      });
-    if (error) console.error("Profile sync error:", error);
-  };
 
-  const syncLibraryWithCloud = async (userId) => {
-    try {
-      // 1. Fetch Cloud Data
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('library')
-        .eq('id', userId)
-        .single();
-
-      if (error && error.code !== 'PGRST116') { // PGRST116 = JSON 0 rows (profile doesn't exist yet)
-        console.error("Error fetching cloud library:", error);
-      }
-
-      const cloudLibrary = data?.library || [];
-      const localLibrary = JSON.parse(localStorage.getItem('myMatches')) || [];
-
-      // 2. Merge (Union of IDs)
-      // We prioritize Cloud status if exists, otherwise Local
-      const mergedMap = new Map();
-      localLibrary.forEach(item => mergedMap.set(item.id, item));
-      cloudLibrary.forEach(item => mergedMap.set(item.id, item)); // Cloud overwrites local if duplicate
-
-      const mergedArray = Array.from(mergedMap.values());
-
-      // 3. Update Local & State
-      setSavedMatches(mergedArray);
-      localStorage.setItem('myMatches', JSON.stringify(mergedArray));
-
-      // 4. Update Cloud (to sync back any local-only items)
-      await supabase.from('profiles').upsert({
-        id: userId,
-        library: mergedArray,
-        updated_at: new Date()
-      });
-
-    } catch (err) {
-      console.error("Sync error:", err);
-    }
-  };
-
-  const saveToCloud = async (newLibrary) => {
-    if (!user) return;
-    await supabase.from('profiles').upsert({
-      id: user.id,
-      library: newLibrary,
-      updated_at: new Date()
-    });
-  };
 
   useEffect(() => {
     if (user) {
@@ -180,7 +131,7 @@ function App() {
     );
     setSavedMatches(updated);
     localStorage.setItem('myMatches', JSON.stringify(updated));
-    saveToCloud(updated);
+    saveToCloud(user, updated);
   };
 
   const bulkUpdateMovieStatus = (movieIds, newStatus) => {
@@ -189,7 +140,7 @@ function App() {
     );
     setSavedMatches(updated);
     localStorage.setItem('myMatches', JSON.stringify(updated));
-    saveToCloud(updated);
+    saveToCloud(user, updated);
   };
 
   const removeMovie = (movieId) => {
@@ -197,7 +148,7 @@ function App() {
       const updated = savedMatches.filter(m => m.id !== movieId);
       setSavedMatches(updated);
       localStorage.setItem('myMatches', JSON.stringify(updated));
-      saveToCloud(updated);
+      saveToCloud(user, updated);
     }
   };
 
@@ -206,7 +157,7 @@ function App() {
       const updated = savedMatches.filter(m => !movieIds.includes(m.id));
       setSavedMatches(updated);
       localStorage.setItem('myMatches', JSON.stringify(updated));
-      saveToCloud(updated);
+      saveToCloud(user, updated);
     }
   };
 
@@ -226,20 +177,11 @@ function App() {
         console.log("Emitting create_room...", { room: targetRoom, username: currentUsername });
         socket.emit("create_room", { room: targetRoom, username: currentUsername });
         if (user) {
-          // Sync Profile to public table for search
-          const syncProfile = async () => {
-            const { error } = await supabase
-              .from('profiles')
-              .upsert({
-                id: user.id,
-                username: user.user_metadata?.username,
-                updated_at: new Date()
-              });
-            if (error) console.error("Profile sync error:", error);
-          };
-          syncProfile();
-
-          syncLibraryWithCloud(user.id); // Assuming fetchUserMatches is syncLibraryWithCloud
+          syncUserProfile(user);
+          syncLibraryWithCloud(user).then(merged => {
+            setSavedMatches(merged);
+            localStorage.setItem('myMatches', JSON.stringify(merged));
+          });
         }
         setIsInRoom(true);
         setGameStarted(false);
@@ -390,7 +332,7 @@ function App() {
         const newMatches = [newMatch, ...currentMatches];
         localStorage.setItem('myMatches', JSON.stringify(newMatches));
         setSavedMatches(newMatches);
-        saveToCloud(newMatches);
+        saveToCloud(userRef.current, newMatches);
       }
     });
 

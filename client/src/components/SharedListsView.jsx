@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import MatchItem from './MatchItem';
 
-const SharedListsView = ({ currentUser }) => {
+const SharedListsView = ({ currentUser, savedMatches }) => {
 	const [lists, setLists] = useState([]);
 	const [view, setView] = useState('list'); // 'list' | 'detail'
 	const [selectedList, setSelectedList] = useState(null);
@@ -42,19 +42,7 @@ const SharedListsView = ({ currentUser }) => {
 		if (!newListParam.trim()) return;
 		if (!currentUser) return alert("Connectez-vous !");
 
-		const { error } = await supabase
-			.from('shared_lists')
-			.insert({ name: newListParam, owner_id: currentUser.id }); // Trigger will ideally add member, but let's be safe and insert member too if trigger not set?
-		// Actually, RLS policy "Members can view shared lists" relies on shared_list_members.
-		// If I insert into shared_lists, I am owner. But can I SELECT it immediately if I am not in shared_list_members?
-		// My policy says: exists(... shared_list_members ...)
-		// So I MUST insert into shared_list_members immediately.
 
-		if (error) {
-			console.error(error);
-			alert("Erreur création.");
-			return;
-		}
 
 		// We need the ID of the new list. Insert returns data.
 		// Let's redo.
@@ -144,6 +132,46 @@ const SharedListsView = ({ currentUser }) => {
 		}
 	}, [showAddMember]);
 
+	// --- MOVIE LOGIC ---
+	const [showAddMovie, setShowAddMovie] = useState(false);
+
+	// Filter out movies already in the list
+	const availableMovies = (savedMatches || []).filter(m => {
+		if (typeof m === 'number') return false; // Only objects have posters
+		const mId = m.id;
+		const existingIds = (selectedList?.movies || []).map(ex => ex.id);
+		return !existingIds.includes(mId);
+	});
+
+	const addMovieToList = async (movie) => {
+		if (!selectedList) return;
+
+		// Ensure we have an object
+		if (typeof movie === 'number') {
+			return alert("Format de film invalide (ancien).");
+		}
+
+		const currentMovies = selectedList.movies || [];
+		const newMovies = [...currentMovies, movie];
+
+		const { error } = await supabase
+			.from('shared_lists')
+			.update({ movies: newMovies })
+			.eq('id', selectedList.id);
+
+		if (error) {
+			console.error(error);
+			alert("Erreur ajout.");
+		} else {
+			// Update local state and list
+			const updated = { ...selectedList, movies: newMovies };
+			setSelectedList(updated);
+			setLists(lists.map(l => l.id === updated.id ? updated : l));
+			alert("Film ajouté !");
+			setShowAddMovie(false);
+		}
+	};
+
 	// --- DETAIL VIEW ---
 	if (view === 'detail' && selectedList) {
 		return (
@@ -165,6 +193,13 @@ const SharedListsView = ({ currentUser }) => {
 							)}
 						</small>
 					</div>
+					<button
+						className="unified-btn primary"
+						style={{ marginLeft: 'auto', padding: '5px 10px', fontSize: '0.9rem' }}
+						onClick={() => setShowAddMovie(true)}
+					>
+						+ 🎬
+					</button>
 				</div>
 
 				{showAddMember && (
@@ -185,6 +220,25 @@ const SharedListsView = ({ currentUser }) => {
 					</div>
 				)}
 
+				{showAddMovie && (
+					<div className="modal-overlay" style={{ zIndex: 1100 }}>
+						<div className="modal-content" style={{ maxWidth: 350, maxHeight: '80vh', background: '#222', color: 'white', display: 'flex', flexDirection: 'column' }}>
+							<h3>Ajouter depuis ma bibliothèque</h3>
+							<div className="matches-grid view-grid" style={{ overflowY: 'auto', flex: 1, gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+								{availableMovies.map(m => (
+									<div key={m.id} onClick={() => addMovieToList(m)} style={{ cursor: 'pointer', position: 'relative' }}>
+										<img src={`https://image.tmdb.org/t/p/w200${m.poster_path}`} alt={m.title} style={{ width: '100%', borderRadius: 8 }} />
+										<div style={{ position: 'absolute', bottom: 0, background: 'rgba(0,0,0,0.7)', width: '100%', fontSize: 10, padding: 2, truncate: true }}>{m.title}</div>
+										<div style={{ position: 'absolute', top: 0, right: 0, background: 'green', borderRadius: '50%', width: 20, height: 20, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>+</div>
+									</div>
+								))}
+								{availableMovies.length === 0 && <p style={{ gridColumn: '1/-1', textAlign: 'center', color: '#888' }}>Aucun film disponible.</p>}
+							</div>
+							<button className="unified-btn secondary" style={{ marginTop: 10 }} onClick={() => setShowAddMovie(false)}>Fermer</button>
+						</div>
+					</div>
+				)}
+
 				{/* LIST CONTENT */}
 				<div className="matches-grid view-grid">
 					{(!selectedList.movies || selectedList.movies.length === 0) && (
@@ -192,7 +246,7 @@ const SharedListsView = ({ currentUser }) => {
 					)}
 					{(selectedList.movies || []).map(m => (
 						<div key={m.id}>
-							<MatchItem movieId={m.id} />
+							<MatchItem movieId={m.id} movie={m} />
 						</div>
 					))}
 				</div>

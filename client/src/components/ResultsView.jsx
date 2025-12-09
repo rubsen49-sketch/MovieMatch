@@ -96,7 +96,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 
 			{activeTab === 'shared' ? (
 				<div style={{ padding: '0 20px', height: '100%', overflowY: 'auto' }}>
-					<SharedListsView currentUser={currentUser} />
+					<SharedListsView currentUser={currentUser} savedMatches={savedMatches} />
 				</div>
 			) : (
 				<div className={`matches-grid ${viewMode === 'list' ? 'view-list' : 'view-grid'}`}>
