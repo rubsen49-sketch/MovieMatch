@@ -6,6 +6,7 @@ const SwipeDeck = ({
 	movies,
 	currentIndex,
 	handleSwipe,
+	handleUndo,
 	setDetailsMovie,
 	leaveRoom,
 	providersDisplay
@@ -64,6 +65,7 @@ const SwipeDeck = ({
 				</div>
 
 				<div className="actions">
+					<button className="btn-circle btn-undo" onClick={handleUndo} style={{ background: '#333', fontSize: '1.2rem' }}>↩️</button>
 					<button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
 					<button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
 				</div>

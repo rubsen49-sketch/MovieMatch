@@ -39,6 +39,10 @@ function App() {
   const [showGenreSelector, setShowGenreSelector] = useState(false);
   const [providersDisplay, setProvidersDisplay] = useState([]);
 
+  // Advanced Filter Defaults
+  const [yearRange, setYearRange] = useState({ min: 1970, max: new Date().getFullYear() });
+
+
   const userId = useRef(getUserId()).current;
 
   const [savedMatches, setSavedMatches] = useState(() => {
@@ -138,6 +142,13 @@ function App() {
 
   const { genre: selectedGenre, rating: minRating, providers: selectedProviders, voteMode } = settings;
 
+  // NOTE: yearRange is currently local state or needs to be synced via settings? 
+  // For simplicity V1: Local to the person fetching (Host drives the API calls mostly).
+  // Ideally should be in 'settings' for sync. 
+  // Let's assume we treat it as local preference for now OR update syncSettings if requested.
+  // User asked for "Filters".
+
+
   // --- ACTIONS BIBLIOTHÈQUE ---
   const updateMovieStatus = (movieId, newStatus) => {
     const updated = savedMatches.map(m =>
@@ -213,6 +224,14 @@ function App() {
     setCurrentIndex((prev) => prev + 1);
   };
 
+  const handleUndo = () => {
+    if (currentIndex > 0) {
+      setCurrentIndex(prev => prev - 1);
+      toast("Retour arrière ↩️");
+      // TODO: Emit 'undo_vote' if we want to cancel server vote.
+    }
+  };
+
   const toggleGenre = (id) => {
     let newGenres;
     if (selectedGenre.includes(id)) {
@@ -229,6 +248,47 @@ function App() {
   }, [isInRoom]);
 
   // Clean up socket listeners is handled by hook.  
+
+  const fetchMovies = async () => {
+    if (!API_KEY) {
+      console.error("API Key missing");
+      return;
+    }
+    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+
+    if (selectedGenre.length > 0) {
+      endpoint += `&with_genres=${selectedGenre.join(',')}`;
+    }
+
+    // YEAR FILTER
+    endpoint += `&watch_region=FR`;
+    if (yearRange.min) endpoint += `&primary_release_date.gte=${yearRange.min}-01-01`;
+    if (yearRange.max) endpoint += `&primary_release_date.lte=${yearRange.max}-12-31`;
+
+    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+
+    if (selectedProviders.length > 0) {
+      endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
+      endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
+    } else {
+      endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
+    }
+
+    try {
+      const response = await axios.get(endpoint);
+      const newMovies = response.data.results;
+
+      if (newMovies.length === 0 && page < 500) {
+        setPage(prev => prev + 1);
+      } else {
+        setMovies(newMovies);
+        setCurrentIndex(0);
+      }
+    } catch (error) {
+      console.error("Erreur API:", error);
+      toast.error("Erreur chargement films");
+    }
+  };
 
 
   useEffect(() => {
@@ -348,6 +408,8 @@ function App() {
           <GenreSelector
             selectedGenre={selectedGenre}
             toggleGenre={toggleGenre}
+            yearRange={yearRange}
+            setYearRange={setYearRange}
             onValidate={() => setShowGenreSelector(false)}
           />
         ) : (
@@ -410,6 +472,7 @@ function App() {
           movies={movies}
           currentIndex={currentIndex}
           handleSwipe={handleSwipe}
+          handleUndo={handleUndo}
           setDetailsMovie={setDetailsMovie}
           leaveRoom={leaveRoom}
           providersDisplay={providersDisplay}
