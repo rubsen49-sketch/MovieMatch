@@ -4,59 +4,59 @@ import { supabase } from '../supabaseClient';
 const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 	const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'requests'
 	const [friends, setFriends] = useState([]);
-	const [requests, setRequests] = useState([]);
+	const [incomingRequests, setIncomingRequests] = useState([]); // Requests sent TO me
+	const [outgoingRequests, setOutgoingRequests] = useState([]); // Requests I sent
 	const [searchResults, setSearchResults] = useState([]);
 	const [searchQuery, setSearchQuery] = useState('');
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState('');
 
 	useEffect(() => {
-		fetchFriends();
-		fetchRequests();
+		fetchAllRelationships();
 	}, [currentUser]);
 
-	const fetchFriends = async () => {
+	const fetchAllRelationships = async () => {
 		try {
+			// Fetch ALL friendships where I am involved
 			const { data, error } = await supabase
 				.from('friendships')
 				.select(`
           id, 
           status,
+          user_id,
+          friend_id,
           friend:friend_id(username, id),
           user:user_id(username, id)
         `)
-				.or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`)
-				.eq('status', 'accepted');
+				.or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
 
 			if (error) throw error;
 
-			// Normalize data: get the "other" person
-			const formatted = data.map(f => {
-				const isMeRequester = f.user.id === currentUser.id;
-				return isMeRequester ? f.friend : f.user;
+			const myFriends = [];
+			const incoming = [];
+			const outgoing = [];
+
+			data.forEach(rel => {
+				if (rel.status === 'accepted') {
+					const isMeRequester = rel.user_id === currentUser.id;
+					myFriends.push(isMeRequester ? rel.friend : rel.user);
+				} else if (rel.status === 'pending') {
+					if (rel.friend_id === currentUser.id) {
+						// I am the target -> Incoming
+						incoming.push({ ...rel, other: rel.user });
+					} else {
+						// I am the sender -> Outgoing
+						outgoing.push({ ...rel, other: rel.friend });
+					}
+				}
 			});
-			setFriends(formatted);
-		} catch (err) {
-			console.error("Error fetching friends:", err);
-		}
-	};
 
-	const fetchRequests = async () => {
-		try {
-			const { data, error } = await supabase
-				.from('friendships')
-				.select(`
-          id, 
-          status,
-          user:user_id(username, id)
-        `)
-				.eq('friend_id', currentUser.id) // Only requests sent TO me
-				.eq('status', 'pending');
+			setFriends(myFriends);
+			setIncomingRequests(incoming);
+			setOutgoingRequests(outgoing);
 
-			if (error) throw error;
-			setRequests(data.map(r => ({ id: r.id, requester: r.user })));
 		} catch (err) {
-			console.error("Error fetching requests:", err);
+			console.error("Error fetching relationships:", err);
 		}
 	};
 
@@ -68,7 +68,7 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 			} else {
 				setSearchResults([]);
 			}
-		}, 500); // 500ms delay
+		}, 500);
 
 		return () => clearTimeout(delayDebounceFn);
 	}, [searchQuery]);
@@ -78,7 +78,6 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 		if (!searchQuery.trim()) return;
 
 		setLoading(true);
-		// setSearchResults([]); // Don't clear immediately to avoid flickering
 
 		try {
 			const { data, error } = await supabase
@@ -97,31 +96,48 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 		}
 	};
 
-	const sendRequest = async (targetId) => {
+	const getRelationshipStatus = (targetUserId) => {
+		// Check friends
+		if (friends.some(f => f.id === targetUserId)) return 'friends';
+		// Check incoming
+		if (incomingRequests.some(r => r.other.id === targetUserId)) return 'received';
+		// Check outgoing
+		if (outgoingRequests.some(r => r.other.id === targetUserId)) return 'sent';
+
+		return 'none';
+	};
+
+	const sendRequest = async (targetUser) => {
 		try {
+			// Optimistic Update
+			setOutgoingRequests(prev => [...prev, { other: targetUser, status: 'pending' }]);
+
 			const { error } = await supabase
 				.from('friendships')
-				.insert({ user_id: currentUser.id, friend_id: targetId });
+				.insert({ user_id: currentUser.id, friend_id: targetUser.id });
 
 			if (error) throw error;
+			await fetchAllRelationships(); // Sync real state
 			setMessage('Demande envoyée !');
 			setTimeout(() => setMessage(''), 2000);
 		} catch (err) {
-			if (err.code === '23505') setMessage('Déjà amis ou demande en cours');
-			else setMessage('Erreur lors de l\'envoi');
+			console.error(err);
+			if (err.code === '23505') setMessage('Déjà demandé');
+			else setMessage('Erreur envoi');
+			await fetchAllRelationships(); // Rollback/Sync
 		}
 	};
 
-	const acceptRequest = async (friendshipId) => {
+	const handleRequest = async (friendshipId, action) => { // action: 'accept' | 'decline'
 		try {
-			const { error } = await supabase
-				.from('friendships')
-				.update({ status: 'accepted' })
-				.eq('id', friendshipId);
-			if (error) throw error;
-			// Refresh
-			fetchRequests();
-			fetchFriends();
+			if (action === 'accept') {
+				const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
+				if (error) throw error;
+			} else {
+				const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
+				if (error) throw error;
+			}
+			fetchAllRelationships();
 		} catch (err) {
 			console.error(err);
 		}
@@ -143,7 +159,7 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 					Ajouter 🔍
 				</button>
 				<button className={`tab-btn ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
-					Demandes {requests.length > 0 && <span style={{ color: 'var(--red)' }}>({requests.length})</span>}
+					Demandes {incomingRequests.length > 0 && <span style={{ color: 'var(--red)' }}>({incomingRequests.length})</span>}
 				</button>
 			</div>
 
@@ -173,6 +189,19 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 								</div>
 							))
 						)}
+
+						{/* Show Outgoing Requests in List text? */}
+						{outgoingRequests.length > 0 && (
+							<div style={{ marginTop: 20, borderTop: '1px solid #333', paddingTop: 10 }}>
+								<h3 style={{ fontSize: '0.9rem', color: '#888' }}>En attente ({outgoingRequests.length})</h3>
+								{outgoingRequests.map(req => (
+									<div key={req.other.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', opacity: 0.7 }}>
+										<span>⏳</span>
+										<span>{req.other.username}</span>
+									</div>
+								))}
+							</div>
+						)}
 					</div>
 				)}
 
@@ -191,14 +220,34 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 						</div>
 
 						<div style={{ marginTop: 20 }}>
-							{searchResults.map(user => (
-								<div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', padding: '10px 0' }}>
-									<span style={{ color: 'white' }}>{user.username}</span>
-									<button className="unified-btn secondary" style={{ width: 'auto', padding: '5px 10px' }} onClick={() => sendRequest(user.id)}>
-										Ajouter +
-									</button>
-								</div>
-							))}
+							{searchResults.map(user => {
+								const status = getRelationshipStatus(user.id);
+								return (
+									<div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #333', padding: '10px 0' }}>
+										<span style={{ color: 'white' }}>{user.username}</span>
+
+										{status === 'none' && (
+											<button className="unified-btn secondary" style={{ width: 'auto', padding: '5px 10px' }} onClick={() => sendRequest(user)}>
+												Ajouter +
+											</button>
+										)}
+
+										{status === 'sent' && (
+											<span style={{ color: '#888', fontStyle: 'italic' }}>Envoyé ✓</span>
+										)}
+
+										{status === 'friends' && (
+											<span style={{ color: 'var(--gold)' }}>Déjà amis</span>
+										)}
+
+										{status === 'received' && (
+											<button className="unified-btn primary" style={{ width: 'auto', padding: '5px 10px' }} onClick={() => setActiveTab('requests')}>
+												Voir demande
+											</button>
+										)}
+									</div>
+								);
+							})}
 						</div>
 					</div>
 				)}
@@ -206,15 +255,20 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 				{/* --- DEMANDES --- */}
 				{activeTab === 'requests' && (
 					<div className="input-group" style={{ background: 'transparent', boxShadow: 'none', border: 'none' }}>
-						{requests.length === 0 ? (
+						{incomingRequests.length === 0 ? (
 							<p style={{ textAlign: 'center', color: '#666' }}>Aucune demande en attente.</p>
 						) : (
-							requests.map(req => (
+							incomingRequests.map(req => (
 								<div key={req.id} className="mini-card" style={{ padding: 15, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-									<span style={{ color: 'white' }}>Demande de <strong>{req.requester.username}</strong></span>
-									<button className="unified-btn primary" style={{ width: 'auto', padding: '5px 15px', background: 'var(--primary)' }} onClick={() => acceptRequest(req.id)}>
-										Accepter
-									</button>
+									<span style={{ color: 'white' }}>De <strong>{req.other.username}</strong></span>
+									<div style={{ display: 'flex', gap: 10 }}>
+										<button className="unified-btn primary" style={{ width: 'auto', padding: '5px 15px', background: 'var(--primary)' }} onClick={() => handleRequest(req.id, 'accept')}>
+											Accepter
+										</button>
+										<button className="unified-btn delete" style={{ width: 'auto', padding: '5px 15px' }} onClick={() => handleRequest(req.id, 'decline')}>
+											Refuser
+										</button>
+									</div>
 								</div>
 							))
 						)}
