@@ -116,6 +116,31 @@ const Lobby = ({
 				Joueurs : <strong style={{ color: 'white', fontSize: '1.2rem' }}>{playerCount}</strong>
 			</p>
 
+			{/* PLAYER LIST */}
+			<div className="player-list" style={{ display: 'flex', flexDirection: 'column', gap: 5, maxWidth: 300, margin: '10px auto 20px auto' }}>
+				{players.map(p => {
+					// Check if it's me
+					const isMe = currentUser && currentUser.user_metadata?.username === p.username;
+					// If not logged in, currentUser is null.
+					// If p is me, don't show add button.
+
+					return (
+						<div key={p.id} style={{ background: 'rgba(255,255,255,0.1)', padding: '5px 10px', borderRadius: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+							<span>👤 {p.username}</span>
+							{!isMe && currentUser && onAddFriend && (
+								<button
+									className="unified-btn secondary"
+									style={{ padding: '2px 8px', fontSize: '0.8rem', width: 'auto' }}
+									onClick={() => onAddFriend(p.username)}
+								>
+									+ Ami
+								</button>
+							)}
+						</div>
+					);
+				})}
+			</div>
+
 			{isHost ? (
 				<div className="host-lobby-menu">
 					<button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>

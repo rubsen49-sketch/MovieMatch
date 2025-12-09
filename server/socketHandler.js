@@ -3,30 +3,50 @@ const { createRoom, getRoom, updateRoomSettings, addLike, migrateHost } = requir
 module.exports = (io, socket) => {
 	console.log(`User Connected: ${socket.id}`);
 
+	// Helper to broadcast player list
+	const broadcastRoomPlayers = (room) => {
+		const roomSockets = io.sockets.adapter.rooms.get(room);
+		if (roomSockets) {
+			const players = [];
+			roomSockets.forEach(socketId => {
+				const s = io.sockets.sockets.get(socketId);
+				if (s) {
+					players.push({
+						id: socketId,
+						username: s.data.username || "Invité"
+					});
+				}
+			});
+			io.to(room).emit("player_list_update", players);
+			io.to(room).emit("player_count_update", players.length);
+		}
+	};
+
 	// 1. CRÉATION SALLE
-	socket.on("create_room", (room) => {
+	socket.on("create_room", ({ room, username }) => {
 		try {
+			socket.data.username = username; // Store on socket instance
 			socket.join(room);
 			createRoom(room, socket.id);
 
-			console.log(`Room created: ${room}`);
-			io.to(room).emit("player_count_update", 1);
+			console.log(`Room created: ${room} by ${username}`);
+			broadcastRoomPlayers(room);
 		} catch (error) {
 			console.error("Erreur create:", error);
 		}
 	});
 
 	// 2. REJOINDRE SALLE
-	socket.on("join_room", (room, callback) => {
+	socket.on("join_room", ({ room, username }, callback) => {
 		try {
 			const roomExists = io.sockets.adapter.rooms.has(room);
 			const roomData = getRoom(room);
 
 			if (roomExists && roomData) {
+				socket.data.username = username; // Store on socket instance
 				socket.join(room);
-				const roomSize = io.sockets.adapter.rooms.get(room)?.size || 0;
 
-				io.to(room).emit("player_count_update", roomSize);
+				broadcastRoomPlayers(room);
 
 				// Send current settings to new user
 				socket.emit("settings_update", roomData.settings);
@@ -113,7 +133,19 @@ module.exports = (io, socket) => {
 
 				const roomSizeBefore = io.sockets.adapter.rooms.get(room)?.size || 1;
 				if (roomSizeBefore > 1) {
-					io.to(room).emit("player_count_update", roomSizeBefore - 1);
+					// Broadcast update excluding the disconnecting user
+					const roomSockets = io.sockets.adapter.rooms.get(room);
+					const players = [];
+					if (roomSockets) {
+						roomSockets.forEach(sid => {
+							if (sid !== socket.id) {
+								const s = io.sockets.sockets.get(sid);
+								if (s) players.push({ id: sid, username: s.data.username || "Invité" });
+							}
+						});
+					}
+					io.to(room).emit("player_list_update", players);
+					io.to(room).emit("player_count_update", players.length); // Keep backward compat logic if needed, but list update covers count
 
 					// --- HOST MIGRATION LOGIC ---
 					const roomSockets = io.sockets.adapter.rooms.get(room); // Set of socket IDs

@@ -59,6 +59,7 @@ function App() {
   const [providersDisplay, setProvidersDisplay] = useState([]);
   const [isHost, setIsHost] = useState(false);
   const [playerCount, setPlayerCount] = useState(0);
+  const [players, setPlayers] = useState([]); // List of { id, username }
   const userId = useRef(getUserId()).current;
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
@@ -215,13 +216,15 @@ function App() {
 
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
+    const currentUsername = user ? (user.user_metadata?.username || 'Utilisateur') : 'Invité';
+
     if (targetRoom !== "") {
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const randomPage = (seed % 30) + 1;
       setPage(randomPage);
 
       if (isHost || roomCodeToJoin) {
-        socket.emit("create_room", targetRoom);
+        socket.emit("create_room", { room: targetRoom, username: currentUsername });
         if (user) {
           // Sync Profile to public table for search
           const syncProfile = async () => {
@@ -242,7 +245,7 @@ function App() {
         setGameStarted(false);
         setView("lobby");
       } else {
-        socket.emit("join_room", targetRoom, (response) => {
+        socket.emit("join_room", { room: targetRoom, username: currentUsername }, (response) => {
           if (response.status === "ok") {
             setIsInRoom(true);
             setGameStarted(false);
@@ -333,6 +336,7 @@ function App() {
 
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
+    socket.on("player_list_update", (list) => setPlayers(list));
     socket.on("settings_update", (settings) => {
       if (settings.genre !== undefined) setSelectedGenre(settings.genre);
       if (settings.rating !== undefined) setMinRating(settings.rating);
@@ -472,6 +476,34 @@ function App() {
   }, [currentIndex, movies]);
 
 
+  const handleAddFriend = async (targetUsername) => {
+    if (!user) return alert("Connectez-vous pour ajouter des amis !");
+
+    try {
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', targetUsername)
+        .single();
+
+      if (pError || !profiles) return alert("Utilisateur introuvable.");
+
+      const { error: fError } = await supabase
+        .from('friendships')
+        .insert({ user_id: user.id, friend_id: profiles.id });
+
+      if (fError) {
+        if (fError.code === '23505') alert("Déjà demandé ou amis !");
+        else throw fError;
+      } else {
+        alert(`Demande envoyée à ${targetUsername} !`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'ajout.");
+    }
+  };
+
   // --- RENDER ---
 
   const renderRoomChat = () => (
@@ -570,7 +602,10 @@ function App() {
         <Lobby
           room={room}
           playerCount={playerCount}
+          players={players}
+          currentUser={user}
           isHost={isHost}
+          onAddFriend={handleAddFriend}
           settings={{
             providers: selectedProviders,
             voteMode: voteMode,

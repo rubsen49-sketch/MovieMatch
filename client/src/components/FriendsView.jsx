@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
+const FriendsView = ({ onClose, currentUser, onViewLibrary, onOpenChat }) => {
 	const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'requests'
 	const [friends, setFriends] = useState([]);
 	const [incomingRequests, setIncomingRequests] = useState([]); // Requests sent TO me
@@ -194,6 +194,15 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 										<span className="friend-name">{friend.username}</span>
 									</div>
 									<div className="friend-actions">
+										<button
+											className="unified-btn secondary btn-library"
+											onClick={() => onOpenChat(friend)}
+											style={{ marginRight: 5 }}
+											title="Envoyer un message"
+										>
+											<span className="btn-text">Message</span>
+											<span className="btn-icon">💬</span>
+										</button>
 										<button
 											className="unified-btn secondary btn-library"
 											onClick={() => onViewLibrary(friend)}
