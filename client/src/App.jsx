@@ -496,14 +496,14 @@ function App() {
             <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
           </div>
         )}
+
+        {/* --- AUTH MODAL (Moved here so it's reachable) --- */}
+        {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
       </div>
     );
   }
 
-  // --- AUTH MODAL ---
-  if (showAuthModal) {
-    return <AuthModal onClose={() => setShowAuthModal(false)} />;
-  }
+
 
 
   // --- GAME ---
