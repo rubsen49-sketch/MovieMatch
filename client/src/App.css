@@ -1114,3 +1114,86 @@ select:focus {
 .auth-logout:hover {
   color: var(--red);
 }
+
+/* --- MOBILE RESPONSIVE --- */
+@media (max-width: 768px) {
+
+  /* 1. Layout Global */
+  .welcome-screen,
+  .matches-screen {
+    padding: 15px;
+  }
+
+  /* 2. Welcome Screen */
+  .welcome-screen h1 {
+    font-size: 2rem;
+  }
+
+  .big-btn {
+    padding: 20px;
+    font-size: 1rem;
+  }
+
+  /* 3. Library Grid - Pass to 1 column? Or smaller 2 columns */
+  .matches-grid {
+    grid-template-columns: 1fr;
+    /* Better for small screens */
+    gap: 20px;
+  }
+
+  .mini-card img {
+    height: 300px;
+    /* Taller images for single column */
+  }
+
+  /* 4. Selection Mode Header */
+  .library-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .btn-select-mode {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+  }
+
+  /* 5. Bulk Action Bar - Sticky Bottom */
+  .bulk-action-bar {
+    width: 95%;
+    padding: 10px 15px;
+    bottom: 15px;
+    flex-direction: column;
+    /* Stack count and buttons if needed, or keep row */
+    gap: 10px;
+  }
+
+  .bulk-buttons {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .bulk-btn {
+    flex: 1;
+    text-align: center;
+    font-size: 0.8rem;
+    padding: 10px;
+  }
+
+  .selection-count {
+    font-size: 0.9rem;
+  }
+
+  /* 6. Modals */
+  .modal-content {
+    max-height: 90vh;
+    width: 95%;
+  }
+
+  .match-title {
+    font-size: 2.5rem;
+  }
+
+  .top-right-auth {
+    top: 15px;
+    right: 15px;
+  }
+}
