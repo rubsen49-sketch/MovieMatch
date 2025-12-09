@@ -2,5 +2,8 @@
   "dependencies": {
     "@vercel/analytics": "^1.6.1",
     "framer-motion": "^12.23.25"
+  },
+  "devDependencies": {
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
