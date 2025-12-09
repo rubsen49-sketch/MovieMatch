@@ -117,8 +117,9 @@
   text-transform: uppercase;
   color: var(--primary);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-  opacity: 0;
-  /* Hidden by default, maybe show if needed */
+  opacity: 1;
+  margin-left: 15px;
+  /* Visible on mobile now */
 }
 
 /* SIDEBAR OVERLAY */
