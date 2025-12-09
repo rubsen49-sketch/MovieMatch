@@ -198,16 +198,7 @@ const Lobby = ({
 				We want SettingsPanel to BE HIDDEN on mobile default to avoid clutter.
 				So we need a class "desktop-only" for lobby-right.
 			*/}
-			<style>{`
-				@media (max-width: 1023px) {
-					.lobby-right { display: none; }
-					.mobile-only-btn { display: block; }
-					.lobby-container { display: block; } /* Reset grid */
-				}
-				@media (min-width: 1024px) {
-					.mobile-only-btn { display: none; }
-				}
-			`}</style>
+
 		</div>
 	);
 };

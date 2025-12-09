@@ -1260,4 +1260,47 @@ select:focus {
     max-width: 100%;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
+
+}
+
+/* --- RESPONSIVE UTILITIES (Extracted from Components) --- */
+
+/* LOBBY & SWIPE SPLIT LOGIC */
+@media (max-width: 1023px) {
+
+  /* Hide Desktop Columns on Mobile */
+  .lobby-right,
+  .swipe-info-side {
+    display: none;
+  }
+
+  /* Show Mobile Only Elements */
+  .mobile-only-btn {
+    display: block;
+  }
+
+  .desktop-hidden {
+    display: flex;
+    /* Flex is common for action bars */
+  }
+
+  /* Reset Grid Layouts for Mobile Stack */
+  .lobby-container {
+    display: block;
+  }
+}
+
+@media (min-width: 1024px) {
+
+  /* Hide Mobile Elements on Desktop */
+  .mobile-only-btn,
+  .desktop-hidden {
+    display: none;
+  }
+
+  /* Force display flex/block for Desktop elements if they were hidden by default or need specific layout */
+  .mobile-hidden {
+    display: flex;
+    /* Often flex containers in this app */
+  }
 }

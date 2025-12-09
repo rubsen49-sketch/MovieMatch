@@ -122,16 +122,7 @@ const SwipeDeck = ({
 
 			<button className="btn-quit" onClick={leaveRoom} style={{ position: 'absolute', top: 20, right: 20, zIndex: 100 }}>✕ Quitter</button>
 
-			<style>{`
-				@media (max-width: 1023px) {
-					.swipe-info-side { display: none; }
-					.desktop-hidden { display: flex; }
-				}
-				@media (min-width: 1024px) {
-					.desktop-hidden { display: none; }
-					.mobile-hidden { display: flex; } /* Logic inverted for flex container */
-				}
-			`}</style>
+
 
 			<Analytics />
 		</div>
