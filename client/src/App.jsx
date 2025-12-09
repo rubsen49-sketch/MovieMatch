@@ -42,7 +42,7 @@ function App() {
   const [match, setMatch] = useState(null);
   const [page, setPage] = useState(1);
   const [view, setView] = useState("menu");
-  const [showMyMatches, setShowMyMatches] = useState(false);
+
 
   // Settings State
   const [selectedGenre, setSelectedGenre] = useState([]);
