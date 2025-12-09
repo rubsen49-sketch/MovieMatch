@@ -11,6 +11,7 @@ import Lobby from './components/Lobby';
 import SwipeDeck from './components/SwipeDeck';
 import ResultsView from './components/ResultsView';
 import AuthModal from './components/AuthModal';
+import FriendsView from './components/FriendsView';
 import { supabase } from './supabaseClient';
 
 // Constants
@@ -75,6 +76,8 @@ function App() {
 
   // --- SUPABASE AUTH & SYNC ---
   const [user, setUser] = useState(null);
+  const [showMyMatches, setShowMyMatches] = useState(false);
+  const [showFriends, setShowFriends] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -190,6 +193,22 @@ function App() {
 
       if (isHost || roomCodeToJoin) {
         socket.emit("create_room", targetRoom);
+        if (user) {
+          // Sync Profile to public table for search
+          const syncProfile = async () => {
+            const { error } = await supabase
+              .from('profiles')
+              .upsert({
+                id: user.id,
+                username: user.user_metadata?.username,
+                updated_at: new Date()
+              });
+            if (error) console.error("Profile sync error:", error);
+          };
+          syncProfile();
+
+          syncLibraryWithCloud(user.id); // Assuming fetchUserMatches is syncLibraryWithCloud
+        }
         setIsInRoom(true);
         setGameStarted(false);
         setView("lobby");
@@ -312,11 +331,23 @@ function App() {
       }
     });
 
+    socket.on("you_are_host", () => {
+      setIsHost(true);
+      alert("L'hôte a quitté. Vous êtes le nouvel hôte ! 👑");
+    });
+
+    socket.on("host_update", (newHostId) => {
+      // Just in case we need to know who the new host is, though "you_are_host" handles the permission
+      if (socket.id === newHostId) setIsHost(true);
+    });
+
     return () => {
       socket.off("player_count_update");
       socket.off("settings_update");
       socket.off("game_started");
       socket.off("match_found");
+      socket.off("you_are_host");
+      socket.off("host_update");
     };
   }, []);
 
@@ -487,7 +518,28 @@ function App() {
     );
   }
 
+  // --- RENDER LOGIC for WELCOME SCREEN components ---
+
   if (!isInRoom) {
+    if (showMyMatches) {
+      return (
+        <ResultsView
+          savedMatches={savedMatches}
+          onClose={() => setShowMyMatches(false)}
+          resetMyMatches={resetMyMatches}
+          onDetails={(movieData) => setDetailsMovie(movieData)}
+          onUpdateStatus={updateMovieStatus}
+          onRemove={removeMovie}
+          onBulkUpdate={bulkUpdateMovieStatus}
+          onBulkRemove={bulkRemoveMovies}
+        />
+      );
+    }
+
+    if (showFriends) {
+      return <FriendsView onClose={() => setShowFriends(false)} currentUser={user} />;
+    }
+
     return (
       <div className="welcome-screen">
         <div className="top-right-auth">
@@ -496,6 +548,13 @@ function App() {
           ) : (
             <div className="auth-status">
               <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
+              <button
+                onClick={() => setShowFriends(true)}
+                className="auth-btn"
+                style={{ marginRight: 10, background: 'transparent', border: '1px solid #555' }}
+              >
+                👥 Amis
+              </button>
               <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
             </div>
           )}

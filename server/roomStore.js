@@ -45,10 +45,33 @@ const removeRoom = (roomId) => {
 	delete roomsData[roomId];
 };
 
+const migrateHost = (roomId, leftHostId, activeSocketIds) => {
+	const room = roomsData[roomId];
+	if (!room) return null;
+
+	if (room.hostId === leftHostId) {
+		// Current host left, promote someone else
+		// activeSocketIds should be an array of socket IDs currently in the room (excluding the leaver if possible)
+		const candidates = activeSocketIds.filter(id => id !== leftHostId);
+
+		if (candidates.length > 0) {
+			const newHostId = candidates[0]; // Simple logic: promote the first available peer
+			room.hostId = newHostId;
+			console.log(`Host Migration in room ${roomId}: ${leftHostId} -> ${newHostId}`);
+			return newHostId;
+		} else {
+			// Room empty?
+			return null;
+		}
+	}
+	return null; // Host didn't leave, or room empty
+};
+
 module.exports = {
 	createRoom,
 	getRoom,
 	updateRoomSettings,
 	addLike,
-	removeRoom
+	removeRoom,
+	migrateHost
 };

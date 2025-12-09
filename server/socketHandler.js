@@ -1,4 +1,4 @@
-const { createRoom, getRoom, updateRoomSettings, addLike } = require('./roomStore');
+const { createRoom, getRoom, updateRoomSettings, addLike, migrateHost } = require('./roomStore');
 
 module.exports = (io, socket) => {
 	console.log(`User Connected: ${socket.id}`);
@@ -97,16 +97,28 @@ module.exports = (io, socket) => {
 		try {
 			const rooms = socket.rooms;
 			rooms.forEach((room) => {
-				// Warning: this runs BEFORE the socket actually leaves, so size includes the disconnecting user
-				const roomSizeBefore = io.sockets.adapter.rooms.get(room)?.size || 1;
-				// Logic says: tell others that size is roomSize - 1
-				// But if roomSize becomes 0, room is destroyed automatically by adapter
+				// Warning: socket.rooms contains the socket ID itself too usually, but here we iterate
+				// 'room' can be the socket.id if not filtered, but usually custom rooms are different.
+				if (room === socket.id) return;
 
+				const roomSizeBefore = io.sockets.adapter.rooms.get(room)?.size || 1;
 				if (roomSizeBefore > 1) {
 					io.to(room).emit("player_count_update", roomSizeBefore - 1);
-				}
 
-				// TODO: Handle Host Migration if host leaves
+					// --- HOST MIGRATION LOGIC ---
+					const roomSockets = io.sockets.adapter.rooms.get(room); // Set of socket IDs
+					if (roomSockets) {
+						const activeIds = Array.from(roomSockets);
+						const newHostId = migrateHost(room, socket.id, activeIds);
+
+						if (newHostId) {
+							// Notify everyone new host
+							io.to(room).emit("host_update", newHostId);
+							// Notify specfic user (optional, but good for UI toast)
+							io.to(newHostId).emit("you_are_host");
+						}
+					}
+				}
 			});
 		} catch (error) {
 			console.error("Erreur disconnect:", error);
