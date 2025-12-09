@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import MatchItem from './MatchItem';
 
-const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdateStatus, onRemove }) => {
+const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdateStatus, onRemove, onBulkUpdate, onBulkRemove }) => {
 	const [activeTab, setActiveTab] = useState('to_watch');
+	const [isSelectionMode, setIsSelectionMode] = useState(false);
+	const [selectedIds, setSelectedIds] = useState([]);
 
 	// Filter logic: handle both new objects and old IDs (fallback)
 	const getFilteredMatches = () => {
@@ -15,22 +17,53 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 
 	const matchesToShow = getFilteredMatches();
 
+	const toggleSelection = (id) => {
+		if (selectedIds.includes(id)) {
+			setSelectedIds(selectedIds.filter(itemId => itemId !== id));
+		} else {
+			setSelectedIds([...selectedIds, id]);
+		}
+	};
+
+	const handleBulkAction = (action) => {
+		if (action === 'move') {
+			// Inverse logic: if tab is 'to_watch' -> move to 'watched', else 'to_watch'
+			const targetStatus = activeTab === 'to_watch' ? 'watched' : 'to_watch';
+			onBulkUpdate(selectedIds, targetStatus);
+		} else if (action === 'delete') {
+			onBulkRemove(selectedIds);
+		}
+		// Reset selection
+		setIsSelectionMode(false);
+		setSelectedIds([]);
+	};
+
 	return (
 		<div className="matches-screen">
-			<button className="btn-back" onClick={onClose}>Retour</button>
-
-			<h2>Ma Bibliothèque</h2>
+			<div className="library-header">
+				<button className="btn-back" onClick={onClose}>Retour</button>
+				<h2>Ma Bibliothèque</h2>
+				<button
+					className={`btn-select-mode ${isSelectionMode ? 'active' : ''}`}
+					onClick={() => {
+						setIsSelectionMode(!isSelectionMode);
+						setSelectedIds([]);
+					}}
+				>
+					{isSelectionMode ? 'Annuler' : 'Sélectionner'}
+				</button>
+			</div>
 
 			<div className="library-tabs">
 				<button
 					className={`tab-btn ${activeTab === 'to_watch' ? 'active' : ''}`}
-					onClick={() => setActiveTab('to_watch')}
+					onClick={() => { setActiveTab('to_watch'); setIsSelectionMode(false); }}
 				>
 					À voir ({savedMatches.filter(m => typeof m === 'number' || m.status === 'to_watch').length})
 				</button>
 				<button
 					className={`tab-btn ${activeTab === 'watched' ? 'active' : ''}`}
-					onClick={() => setActiveTab('watched')}
+					onClick={() => { setActiveTab('watched'); setIsSelectionMode(false); }}
 				>
 					Vus ({savedMatches.filter(m => typeof m === 'object' && m.status === 'watched').length})
 				</button>
@@ -39,52 +72,78 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 			<div className="matches-grid">
 				{matchesToShow.map(item => {
 					const movieId = typeof item === 'number' ? item : item.id;
+					const isSelected = selectedIds.includes(movieId);
+
 					return (
-						<div key={movieId} style={{ position: 'relative' }}>
+						<div
+							key={movieId}
+							style={{ position: 'relative' }}
+							className={isSelectionMode && isSelected ? 'item-selected' : ''}
+							onClick={() => isSelectionMode && toggleSelection(movieId)}
+						>
 							<MatchItem
 								movieId={movieId}
-								onClick={onDetails}
+								onClick={isSelectionMode ? () => toggleSelection(movieId) : onDetails}
 							/>
-							<div className="card-actions">
-								{activeTab === 'to_watch' && (
+
+							{/* Checkbox Overlay in Selection Mode */}
+							{isSelectionMode && (
+								<div className={`selection-overlay ${isSelected ? 'checked' : ''}`}>
+									<div className="checkbox-circle">
+										{isSelected && '✓'}
+									</div>
+								</div>
+							)}
+
+							{/* Standard Actions (Only if NOT in selection mode) */}
+							{!isSelectionMode && (
+								<div className="card-actions">
+									{activeTab === 'to_watch' && (
+										<button
+											className="action-btn check"
+											title="Marquer comme vu"
+											onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'watched'); }}
+										>
+											✔️
+										</button>
+									)}
+									{activeTab === 'watched' && (
+										<button
+											className="action-btn"
+											title="Remettre à voir"
+											onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'to_watch'); }}
+										>
+											↩️
+										</button>
+									)}
 									<button
-										className="action-btn check"
-										title="Marquer comme vu"
-										onClick={(e) => {
-											e.stopPropagation();
-											onUpdateStatus(movieId, 'watched');
-										}}
+										className="action-btn delete"
+										title="Supprimer"
+										onClick={(e) => { e.stopPropagation(); onRemove(movieId); }}
 									>
-										✔️
+										🗑️
 									</button>
-								)}
-								{activeTab === 'watched' && (
-									<button
-										className="action-btn"
-										title="Remettre à voir"
-										onClick={(e) => {
-											e.stopPropagation();
-											onUpdateStatus(movieId, 'to_watch');
-										}}
-									>
-										↩️
-									</button>
-								)}
-								<button
-									className="action-btn delete"
-									title="Supprimer"
-									onClick={(e) => {
-										e.stopPropagation();
-										onRemove(movieId);
-									}}
-								>
-									🗑️
-								</button>
-							</div>
+								</div>
+							)}
 						</div>
 					);
 				})}
 			</div>
+
+			{/* BULK ACTION BAR */}
+			{isSelectionMode && selectedIds.length > 0 && (
+				<div className="bulk-action-bar">
+					<span className="selection-count">{selectedIds.length} sélectionné(s)</span>
+					<div className="bulk-buttons">
+						<button className="bulk-btn move" onClick={() => handleBulkAction('move')}>
+							{activeTab === 'to_watch' ? '✅ Marquer Vus' : '↩️ Remettre à voir'}
+						</button>
+						<button className="bulk-btn delete" onClick={() => handleBulkAction('delete')}>
+							🗑️ Supprimer
+						</button>
+					</div>
+				</div>
+			)}
 
 			{savedMatches.length === 0 && (
 				<p style={{ color: '#666', marginTop: 50 }}>Aucun film pour le moment...</p>

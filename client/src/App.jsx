@@ -152,9 +152,27 @@ function App() {
     saveToCloud(updated);
   };
 
+  const bulkUpdateMovieStatus = (movieIds, newStatus) => {
+    const updated = savedMatches.map(m =>
+      movieIds.includes(m.id) ? { ...m, status: newStatus } : m
+    );
+    setSavedMatches(updated);
+    localStorage.setItem('myMatches', JSON.stringify(updated));
+    saveToCloud(updated);
+  };
+
   const removeMovie = (movieId) => {
     if (confirm("Supprimer ce film de la liste ?")) {
       const updated = savedMatches.filter(m => m.id !== movieId);
+      setSavedMatches(updated);
+      localStorage.setItem('myMatches', JSON.stringify(updated));
+      saveToCloud(updated);
+    }
+  };
+
+  const bulkRemoveMovies = (movieIds) => {
+    if (confirm(`Supprimer ces ${movieIds.length} films ?`)) {
+      const updated = savedMatches.filter(m => !movieIds.includes(m.id));
       setSavedMatches(updated);
       localStorage.setItem('myMatches', JSON.stringify(updated));
       saveToCloud(updated);
@@ -403,6 +421,8 @@ function App() {
           onDetails={(movieData) => setDetailsMovie(movieData)}
           onUpdateStatus={updateMovieStatus}
           onRemove={removeMovie}
+          onBulkUpdate={bulkUpdateMovieStatus}
+          onBulkRemove={bulkRemoveMovies}
         />
       </>
     );

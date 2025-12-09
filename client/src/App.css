@@ -693,6 +693,123 @@ select:focus {
   display: none;
 }
 
+/* --- SELECTION MODE CSS --- */
+.library-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.library-header h2 {
+  flex-grow: 1;
+  text-align: center;
+  margin: 0;
+}
+
+.btn-select-mode {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 15px;
+  padding: 5px 15px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.btn-select-mode.active {
+  background: var(--gold);
+  color: black;
+}
+
+/* Overlay Selection sur MatchItem */
+.selection-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+}
+
+.checkbox-circle {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  border: 2px solid white;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.selection-overlay.checked .checkbox-circle {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.item-selected .mini-card {
+  border: 2px solid var(--gold);
+  transform: scale(0.95);
+  transition: all 0.2s;
+}
+
+/* Bottom Action Bar */
+.bulk-action-bar {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #222;
+  border: 1px solid #444;
+  padding: 15px 25px;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+  z-index: 2000;
+  width: 90%;
+  max-width: 400px;
+}
+
+.selection-count {
+  font-weight: bold;
+  color: white;
+  flex-shrink: 0;
+}
+
+.bulk-buttons {
+  display: flex;
+  gap: 10px;
+  flex-grow: 1;
+  justify-content: flex-end;
+}
+
+.bulk-btn {
+  padding: 8px 15px;
+  border-radius: 15px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.bulk-btn.move {
+  background: white;
+  color: black;
+}
+
+.bulk-btn.delete {
+  background: #2a2a2a;
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+
 .close-modal {
   position: absolute;
   top: 15px;
@@ -973,7 +1090,7 @@ select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: rgba(0,0,0,0.5);
+  background: rgba(0, 0, 0, 0.5);
   padding: 5px 10px;
   border-radius: 20px;
   border: 1px solid #333;

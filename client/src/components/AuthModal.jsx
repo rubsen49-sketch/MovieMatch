@@ -23,7 +23,8 @@ const AuthModal = ({ onClose }) => {
 					email,
 					password,
 					options: {
-						data: { username: username } // Store username in metadata
+						data: { username: username }, // Store username in metadata
+						emailRedirectTo: window.location.origin // Ensure redirect goes to current site (localhost or Vercel)
 					}
 				});
 				if (error) throw error;
