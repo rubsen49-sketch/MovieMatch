@@ -82,9 +82,11 @@ textarea {
   font-size: inherit;
 }
 
-/* Scrollbar invisible global */
+/* Scrollbar styles */
+* {
+  scrollbar-width: none;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }
-
-scrollbar-width: none;
