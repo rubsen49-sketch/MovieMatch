@@ -1408,3 +1408,86 @@ select:focus {
     /* Often flex containers in this app */
   }
 }
+
+/* --- SETTINGS & FILTERS POLISH --- */
+
+/* Rating Selector */
+.rating-selector select {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.rating-selector select:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--primary);
+}
+
+/* Date Range Inputs */
+.input-year-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
+}
+
+.input-year {
+  background: rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: var(--gold) !important;
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  width: 100px !important;
+  padding: 10px !important;
+  border-radius: 12px !important;
+  transition: all 0.2s;
+}
+
+.input-year:focus {
+  border-color: var(--gold) !important;
+  box-shadow: 0 0 15px rgba(255, 179, 0, 0.2);
+  transform: scale(1.05);
+}
+
+/* Genre Box Grid */
+.genre-grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 10px;
+  padding: 10px 0;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.genre-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--text-sub);
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.genre-box:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.genre-box.active {
+  background: rgba(229, 9, 20, 0.15);
+  border-color: var(--primary);
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
