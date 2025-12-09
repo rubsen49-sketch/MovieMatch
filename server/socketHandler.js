@@ -60,6 +60,16 @@ module.exports = (io, socket) => {
 		io.to(room).emit("game_started");
 	});
 
+	// --- CHAT EVENTS ---
+	socket.on('send_message', ({ roomId, message, username }) => {
+		io.to(roomId).emit('receive_message', {
+			user: username,
+			text: message,
+			type: 'user',
+			timestamp: new Date().toISOString()
+		});
+	});
+
 	// 4. SWIPE INTELLIGENT (Cœur du système)
 	socket.on("swipe_right", (data) => {
 		try {
