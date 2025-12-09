@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Analytics } from "@vercel/analytics/react";
 
@@ -7,7 +7,7 @@ const SwipeDeck = ({
 	currentIndex,
 	handleSwipe,
 	handleUndo,
-	setDetailsMovie,
+	setDetailsMovie, // Used for mobile modal, but on desktop we show details inline
 	leaveRoom,
 	providersDisplay
 }) => {
@@ -19,6 +19,17 @@ const SwipeDeck = ({
 		if (info.offset.x > 100) handleSwipe("right");
 		else if (info.offset.x < -100) handleSwipe("left");
 	};
+
+	// Keyboard Support
+	useEffect(() => {
+		const handleKeyDown = (e) => {
+			if (e.key === 'ArrowRight') handleSwipe("right");
+			if (e.key === 'ArrowLeft') handleSwipe("left");
+			if (e.key === 'Backspace') handleUndo();
+		};
+		window.addEventListener('keydown', handleKeyDown);
+		return () => window.removeEventListener('keydown', handleKeyDown);
+	}, [handleSwipe, handleUndo]);
 
 	if (currentIndex >= movies.length) {
 		return (
@@ -32,49 +43,97 @@ const SwipeDeck = ({
 
 	return (
 		<div className="deck-container">
-			<div className="card-container">
-				<button className="btn-quit" onClick={leaveRoom}>Quitter</button>
+			{/* DESKTOP SPLIT LAYOUT WRAPPER (See App.css media query) */}
+			<div className="swipe-split-layout">
 
-				<motion.div
-					className="movie-card"
-					drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
-					style={{ x, rotate, opacity }}
-					initial={{ scale: 0.8 }} animate={{ scale: 1 }}
-				>
-					<div className="movie-poster-wrapper" onClick={() => setDetailsMovie(movie)}>
-						<img
-							className="movie-poster clickable"
-							src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-							draggable="false"
-							alt={movie.title}
-						/>
-						<div className="movie-info-overlay">
-							<div className="providers-container" style={{ marginBottom: 10, display: 'flex', gap: 5 }}>
-								{providersDisplay.map((p) => (
-									<img
-										key={p.provider_id}
-										src={`https://image.tmdb.org/t/p/original${p.logo_path}`}
-										style={{ width: 25, height: 25, borderRadius: 4, margin: 0 }}
-										alt="provider"
-									/>
-								))}
-							</div>
-							<h2>{movie.title}</h2>
-							<div className="movie-meta">
-								<span>{movie.release_date?.split('-')[0]}</span>
-								<span>★ {movie.vote_average?.toFixed(1)}</span>
+				{/* LEFT: CARD (Draggable) */}
+				<div className="swipe-card-side">
+					<motion.div
+						className="movie-card"
+						drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
+						style={{ x, rotate, opacity }}
+						initial={{ scale: 0.8 }} animate={{ scale: 1 }}
+						key={movie.id} // Re-mount key for clean transition
+					>
+						<div className="movie-poster-wrapper">
+							<img
+								className="movie-poster"
+								src={`https://image.tmdb.org/t/p/w780${movie.poster_path}`} // Higher res for desktop
+								draggable="false"
+								alt={movie.title}
+							/>
+							{/* Overlay only visible on Mobile via CSS */}
+							<div className="movie-info-overlay">
+								<h2>{movie.title}</h2>
+								<div className="movie-meta">
+									<span>{movie.release_date?.split('-')[0]}</span>
+									<span>★ {movie.vote_average?.toFixed(1)}</span>
+								</div>
 							</div>
 						</div>
+					</motion.div>
+				</div>
+
+				{/* RIGHT: DETAILS & ACTIONS (Desktop Only - visible via flex/grid) */}
+				<div className="swipe-info-side mobile-hidden">
+					<div className="providers-list" style={{ display: 'flex', gap: 10 }}>
+						{providersDisplay.map((p) => (
+							<img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} style={{ width: 40, borderRadius: 8 }} alt="prov" />
+						))}
 					</div>
 
-					<div className="actions">
-						<button className="btn-circle btn-undo" onClick={handleUndo} style={{ background: '#333', fontSize: '1.2rem', width: 50, height: 50 }}>↩️</button>
-						<button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
-						<button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
+					<h1 className="desktop-movie-title">{movie.title}</h1>
+
+					<div className="desktop-meta-row">
+						<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{movie.release_date?.split('-')[0]}</span>
+						<span>•</span>
+						<span>{movie.vote_average?.toFixed(1)} / 10</span>
+						<span>•</span>
+						<span style={{ fontSize: '1rem' }}>{movie.original_language?.toUpperCase()}</span>
 					</div>
-				</motion.div>
-				<Analytics />
+
+					<p className="desktop-overview">
+						{movie.overview || "Aucun résumé disponible pour ce film."}
+					</p>
+
+					<div className="desktop-actions">
+						<div className="action-hint" onClick={handleUndo}>
+							<span className="kbd-key">← BACKSPACE</span>
+							<span>Retour</span>
+						</div>
+						<div className="action-hint" onClick={() => handleSwipe("left")}>
+							<span className="kbd-key">← GAUCHE</span>
+							<span style={{ color: 'var(--red)' }}>Passer</span>
+						</div>
+						<div className="action-hint" onClick={() => handleSwipe("right")}>
+							<span className="kbd-key">DROITE →</span>
+							<span style={{ color: 'var(--gold)' }}>Liker</span>
+						</div>
+					</div>
+				</div>
+
+				{/* MOBILE ACTIONS (Floating at bottom, visible only mobile via CSS) */}
+				<div className="actions desktop-hidden">
+					<button className="btn-circle btn-undo" onClick={handleUndo} style={{ background: '#333', fontSize: '1.2rem', width: 50, height: 50 }}>↩️</button>
+					<button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
+					<button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
+				</div>
 			</div>
+
+			<button className="btn-quit" onClick={leaveRoom} style={{ position: 'absolute', top: 20, right: 20, zIndex: 100 }}>✕ Quitter</button>
+
+			<style>{`
+				@media (max-width: 1023px) {
+					.swipe-info-side { display: none; }
+					.desktop-hidden { display: flex; }
+				}
+				@media (min-width: 1024px) {
+					.desktop-hidden { display: none; }
+					.mobile-hidden { display: flex; } /* Logic inverted for flex container */
+				}
+			`}</style>
+
+			<Analytics />
 		</div>
 	);
 };
