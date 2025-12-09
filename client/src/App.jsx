@@ -20,6 +20,27 @@ const PLATFORMS = [
   { id: 381, name: "Canal+", logo: "https://image.tmdb.org/t/p/original/geOzgeKZWpZC3lymAVEHVIk3X0q.jpg" } // Lien corrigé
 ];
 
+const GENRES_LIST = [
+  { id: 28, name: "Action" },
+  { id: 12, name: "Aventure" },
+  { id: 16, name: "Animation" },
+  { id: 35, name: "Comédie" },
+  { id: 80, name: "Crime" },
+  { id: 99, name: "Documentaire" },
+  { id: 18, name: "Drame" },
+  { id: 10751, name: "Famille" },
+  { id: 14, name: "Fantastique" },
+  { id: 36, name: "Histoire" },
+  { id: 27, name: "Horreur" },
+  { id: 10402, name: "Musique" },
+  { id: 9648, name: "Mystère" },
+  { id: 10749, name: "Romance" },
+  { id: 878, name: "Sci-Fi" },
+  { id: 53, name: "Thriller" },
+  { id: 10752, name: "Guerre" },
+  { id: 37, name: "Western" }
+];
+
 const getUserId = () => {
   let id = localStorage.getItem('userId');
   if (!id) {
@@ -149,7 +170,8 @@ function App() {
   const [page, setPage] = useState(1);
   const [view, setView] = useState("menu"); 
   const [showMyMatches, setShowMyMatches] = useState(false);
-  const [selectedGenre, setSelectedGenre] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState([]);
+  const [showGenreSelector, setShowGenreSelector] = useState(false);
   const [minRating, setMinRating] = useState(0);
   const [selectedProviders, setSelectedProviders] = useState([]); 
   const [voteMode, setVoteMode] = useState('majority'); 
@@ -236,33 +258,27 @@ function App() {
   };
 
   const fetchMovies = async () => {
-    const today = new Date().toISOString().split('T')[0];
+    // ... (début inchangé) ...
     let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
     
-    if (selectedGenre) endpoint += `&with_genres=${selectedGenre}`;
-    endpoint += `&watch_region=FR&primary_release_date.lte=${today}`;
-    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+    // MODIFICATION ICI : On joint les IDs par une virgule pour l'API
+    if (selectedGenre.length > 0) {
+      // .join(',') transforme [28, 12] en "28,12"
+      endpoint += `&with_genres=${selectedGenre.join(',')}`; 
+    }
+    // ... (reste de la fonction fetchMovies inchangé) ...
+  };
 
-    if (selectedProviders.length > 0) {
-      endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
-      endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
+  const toggleGenre = (id) => {
+    let newGenres;
+    if (selectedGenre.includes(id)) {
+      newGenres = selectedGenre.filter(g => g !== id); // On enlève
     } else {
-      endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
+      newGenres = [...selectedGenre, id]; // On ajoute
     }
-
-    try {
-      const response = await axios.get(endpoint);
-      const newMovies = response.data.results; 
-      
-      if (newMovies.length === 0 && page < 500) {
-        setPage(prev => prev + 1);
-      } else {
-        setMovies(newMovies);
-        setCurrentIndex(0); 
-      }
-    } catch (error) {
-      console.error("Erreur API:", error);
-    }
+    // On met à jour l'état local et on synchronise avec les autres joueurs
+    setSelectedGenre(newGenres);
+    syncSettings({ genre: newGenres });
   };
 
 
@@ -501,14 +517,92 @@ function App() {
 
                 <label>Genre & Qualité :</label>
                 <div className="filters-row">
-                  <select value={selectedGenre} onChange={(e) => syncSettings({genre: e.target.value})}>
-                    <option value="">Tous Genres</option>
-                    <option value="28">Action</option>
-                    <option value="35">Comédie</option>
-                    <option value="27">Horreur</option>
-                    <option value="10749">Romance</option>
-                    <option value="16">Animation</option>
-                  </select>
+                if (showGenreSelector) {
+    return (
+      <div className="welcome-screen">
+        <h2>Choisis tes styles</h2>
+        <p style={{color: '#888', marginBottom: '20px'}}>
+          {selectedGenre.length === 0 ? "Tous les genres" : `${selectedGenre.length} sélectionné(s)`}
+        </p>
+        
+        <div className="genre-grid-container">
+          {GENRES_LIST.map((genre) => {
+            const isActive = selectedGenre.includes(genre.id);
+            return (
+              <div 
+                key={genre.id} 
+                className={`genre-box ${isActive ? 'active' : ''}`}
+                onClick={() => toggleGenre(genre.id)}
+              >
+                {genre.name}
+              </div>
+            );
+          })}
+        </div>
+
+        <button 
+          className="unified-btn validate" 
+          style={{marginTop: '20px'}} 
+          onClick={() => setShowGenreSelector(false)}
+        >
+          Valider les genres
+        </button>
+      </div>
+    );
+  }
+
+  // SINON (Affichage normal des paramètres)
+  return (
+      <div className="welcome-screen">
+        {/* ... (Code du Header Salle d'attente inchangé) ... */}
+
+        {isHost ? (
+          <>
+            {!showHostSettings ? (
+               // ... (Menu principal Hôte inchangé) ...
+               <div className="host-lobby-menu">
+                  {/* ... boutons existants ... */}
+                  <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
+                    Paramètres de la partie
+                  </button>
+                  <div style={{height: '15px'}}></div>
+                  <button className="unified-btn primary" onClick={startGame}>
+                    LANCER LA PARTIE
+                  </button>
+               </div>
+            ) : (
+              <div className="room-settings">
+                <h3>Paramètres</h3>
+                
+                {/* ... (Section Abonnements inchangée) ... */}
+                <label>Vos Abonnements :</label>
+                <div className="providers-select">
+                   {/* ... code providers existant ... */}
+                   {PLATFORMS.map(p => (
+                    <div 
+                      key={p.id} 
+                      className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
+                      onClick={() => toggleProvider(p.id)}
+                    >
+                      <img src={p.logo} alt={p.name} />
+                    </div>
+                  ))}
+                </div>
+
+                {/* ... (Mode de vote inchangé) ... */}
+
+                <label>Genre & Qualité :</label>
+                <div className="filters-row-vertical">
+                  {/* BOUTON QUI OUVRE LA PAGE DES GENRES */}
+                  <button 
+                    className="unified-btn secondary" 
+                    onClick={() => setShowGenreSelector(true)}
+                    style={{ marginBottom: '10px' }}
+                  >
+                    {selectedGenre.length > 0 
+                      ? `Genres : ${selectedGenre.length} choisi(s)` 
+                      : "Choisir les genres (Tous)"} ✏️
+                  </button>
                   <select value={minRating} onChange={(e) => syncSettings({rating: e.target.value})}>
                     <option value="0">Toute Note</option>
                     <option value="7">7+ (Bon)</option>

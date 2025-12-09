@@ -799,3 +799,61 @@ select:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* --- SÉLECTEUR DE GENRES (GRILLE) --- */
+
+.genre-grid-container {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* 2 colonnes */
+  gap: 15px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 5px;
+  /* Masquer la scrollbar */
+  scrollbar-width: none;
+}
+
+.genre-grid-container::-webkit-scrollbar {
+  display: none;
+}
+
+.genre-box {
+  background-color: #222;
+  border: 2px solid #333;
+  color: #888;
+  border-radius: 16px;
+  /* Bords bien arrondis */
+  padding: 20px 10px;
+  font-weight: bold;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.genre-box:active {
+  transform: scale(0.95);
+}
+
+/* L'état ACTIVÉ "en vif" */
+.genre-box.active {
+  background-color: rgba(255, 179, 0, 0.15);
+  /* Fond légèrement doré */
+  border-color: var(--gold);
+  /* Bordure Or vif */
+  color: var(--gold);
+  box-shadow: 0 0 15px rgba(255, 179, 0, 0.2);
+  transform: scale(1.02);
+}
+
+/* Ajustement pour empiler le bouton genre et le select note */
+.filters-row-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
