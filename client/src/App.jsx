@@ -475,7 +475,7 @@ function App() {
             <button onClick={() => setShowAuthModal(true)} className="auth-btn">👤 Compte</button>
           ) : (
             <div className="auth-status">
-              <span>{user.email.split('@')[0]}</span>
+              <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
               <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
             </div>
           )}
