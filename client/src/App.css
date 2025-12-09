@@ -1116,12 +1116,38 @@ select:focus {
 }
 
 /* --- MOBILE RESPONSIVE --- */
+.view-toggles {
+  display: flex;
+  background: #333;
+  border-radius: 10px;
+  padding: 2px;
+  margin: 0 10px;
+}
+
+.view-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 5px 12px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 8px;
+  line-height: 1;
+}
+
+.view-btn.active {
+  background: var(--gold);
+  color: black;
+}
+
+/* --- MOBILE RESPONSIVE --- */
 @media (max-width: 768px) {
 
   /* 1. Layout Global */
   .welcome-screen,
   .matches-screen {
-    padding: 15px;
+    padding: 10px;
+    /* Even smaller padding for more space */
   }
 
   /* 2. Welcome Screen */
@@ -1134,52 +1160,70 @@ select:focus {
     font-size: 1rem;
   }
 
-  /* 3. Library Grid - Pass to 1 column? Or smaller 2 columns */
-  .matches-grid {
+  /* 3. Library Grid - Controlled by classes now */
+  .matches-grid.view-list {
     grid-template-columns: 1fr;
-    /* Better for small screens */
     gap: 20px;
   }
 
-  .mini-card img {
+  .matches-grid.view-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    /* Tighter gap for grid */
+  }
+
+  .view-list .mini-card img {
     height: 300px;
-    /* Taller images for single column */
+    /* Big for list */
+  }
+
+  .view-grid .mini-card img {
+    height: 220px;
+    /* Smaller for grid */
   }
 
   /* 4. Selection Mode Header */
-  .library-header h2 {
-    font-size: 1.2rem;
+  .library-header {
+    margin-bottom: 20px;
   }
 
   .btn-select-mode {
     padding: 5px 10px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .btn-back {
+    padding: 5px 15px;
     font-size: 0.8rem;
   }
 
   /* 5. Bulk Action Bar - Sticky Bottom */
   .bulk-action-bar {
     width: 95%;
-    padding: 10px 15px;
-    bottom: 15px;
-    flex-direction: column;
-    /* Stack count and buttons if needed, or keep row */
+    padding: 10px;
+    bottom: 10px;
+    flex-direction: row;
+    /* Back to row for compactness */
     gap: 10px;
-  }
-
-  .bulk-buttons {
-    width: 100%;
     justify-content: space-between;
   }
 
+  .bulk-buttons {
+    width: auto;
+    gap: 5px;
+  }
+
   .bulk-btn {
-    flex: 1;
-    text-align: center;
-    font-size: 0.8rem;
-    padding: 10px;
+    padding: 8px 10px;
+    font-size: 0.75rem;
+    flex: initial;
+    /* Don't stretch purely */
   }
 
   .selection-count {
-    font-size: 0.9rem;
+    display: none;
+    /* Hide text on very small screens if needed, or keep small */
   }
 
   /* 6. Modals */

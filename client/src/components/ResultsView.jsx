@@ -5,6 +5,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 	const [activeTab, setActiveTab] = useState('to_watch');
 	const [isSelectionMode, setIsSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
+	const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
 
 	// Filter logic: handle both new objects and old IDs (fallback)
 	const getFilteredMatches = () => {
@@ -27,13 +28,11 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 
 	const handleBulkAction = (action) => {
 		if (action === 'move') {
-			// Inverse logic: if tab is 'to_watch' -> move to 'watched', else 'to_watch'
 			const targetStatus = activeTab === 'to_watch' ? 'watched' : 'to_watch';
 			onBulkUpdate(selectedIds, targetStatus);
 		} else if (action === 'delete') {
 			onBulkRemove(selectedIds);
 		}
-		// Reset selection
 		setIsSelectionMode(false);
 		setSelectedIds([]);
 	};
@@ -42,7 +41,24 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 		<div className="matches-screen">
 			<div className="library-header">
 				<button className="btn-back" onClick={onClose}>Retour</button>
-				<h2>Ma Bibliothèque</h2>
+
+				<div className="view-toggles">
+					<button
+						className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+						onClick={() => setViewMode('grid')}
+						title="Grille"
+					>
+						⊞
+					</button>
+					<button
+						className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+						onClick={() => setViewMode('list')}
+						title="Liste"
+					>
+						☰
+					</button>
+				</div>
+
 				<button
 					className={`btn-select-mode ${isSelectionMode ? 'active' : ''}`}
 					onClick={() => {
@@ -50,7 +66,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 						setSelectedIds([]);
 					}}
 				>
-					{isSelectionMode ? 'Annuler' : 'Sélectionner'}
+					{isSelectionMode ? 'OK' : 'Sélection'}
 				</button>
 			</div>
 
@@ -69,7 +85,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 				</button>
 			</div>
 
-			<div className="matches-grid">
+			<div className={`matches-grid ${viewMode === 'list' ? 'view-list' : 'view-grid'}`}>
 				{matchesToShow.map(item => {
 					const movieId = typeof item === 'number' ? item : item.id;
 					const isSelected = selectedIds.includes(movieId);
