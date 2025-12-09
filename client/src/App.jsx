@@ -14,7 +14,7 @@ import Lobby from './components/Lobby';
 import SwipeDeck from './components/SwipeDeck';
 import WelcomeScreen from './components/WelcomeScreen';
 import ResultsView from './components/ResultsView'; // Needed for direct tab access
-import FriendsView from './components/FriendsView'; // Needed for direct tab access
+import { seededShuffle } from './utils/gameUtils'; // Restore seeded shuffle logic // Needed for direct tab access
 import AuthModal from './components/AuthModal';
 
 // ... (existing imports)
@@ -279,7 +279,10 @@ function App() {
       if (newMovies.length === 0 && page < 500) {
         setPage(prev => prev + 1);
       } else {
-        setMovies(newMovies);
+        // SEEDED SHUFFLE: Ensure all users see movies in same random order based on room code
+        // We incorporate 'page' into the seed so page 2 is also shuffled deterministically but differently from page 1
+        const shuffledMovies = seededShuffle(newMovies, `${room}-${page}`);
+        setMovies(shuffledMovies);
         setCurrentIndex(0);
       }
     } catch (error) {
