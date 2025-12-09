@@ -54,9 +54,39 @@ function App() {
   const userId = useRef(getUserId()).current;
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
-    return saved ? JSON.parse(saved) : [];
+    if (!saved) return [];
+
+    const parsed = JSON.parse(saved);
+    // Migration: If it's a simple array of IDs, convert to objects
+    if (parsed.length > 0 && typeof parsed[0] === 'number') {
+      const migrated = parsed.map(id => ({
+        id,
+        status: 'to_watch',
+        addedAt: new Date().toISOString()
+      }));
+      localStorage.setItem('myMatches', JSON.stringify(migrated));
+      return migrated;
+    }
+    return parsed;
   });
   const [detailsMovie, setDetailsMovie] = useState(null);
+
+  // --- ACTIONS BIBLIOTHÈQUE ---
+  const updateMovieStatus = (movieId, newStatus) => {
+    const updated = savedMatches.map(m =>
+      m.id === movieId ? { ...m, status: newStatus } : m
+    );
+    setSavedMatches(updated);
+    localStorage.setItem('myMatches', JSON.stringify(updated));
+  };
+
+  const removeMovie = (movieId) => {
+    if (confirm("Supprimer ce film de la liste ?")) {
+      const updated = savedMatches.filter(m => m.id !== movieId);
+      setSavedMatches(updated);
+      localStorage.setItem('myMatches', JSON.stringify(updated));
+    }
+  };
 
   // --- SOCKET & GAME LOGIC ---
 
@@ -174,8 +204,17 @@ function App() {
     socket.on("match_found", (data) => {
       setMatch(data);
       const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
-      if (!currentMatches.includes(data.movieId)) {
-        const newMatches = [data.movieId, ...currentMatches];
+
+      // Check if already exists (check by ID)
+      const exists = currentMatches.some(m => m.id === data.movieId);
+
+      if (!exists) {
+        const newMatch = {
+          id: data.movieId,
+          status: 'to_watch',
+          addedAt: new Date().toISOString()
+        };
+        const newMatches = [newMatch, ...currentMatches];
         localStorage.setItem('myMatches', JSON.stringify(newMatches));
         setSavedMatches(newMatches);
       }
@@ -276,6 +315,8 @@ function App() {
           onClose={() => setShowMyMatches(false)}
           resetMyMatches={resetMyMatches}
           onDetails={(movieData) => setDetailsMovie(movieData)}
+          onUpdateStatus={updateMovieStatus}
+          onRemove={removeMovie}
         />
       </>
     );
