@@ -12,7 +12,75 @@ import SwipeDeck from './components/SwipeDeck';
 import ResultsView from './components/ResultsView';
 import AuthModal from './components/AuthModal';
 import FriendsView from './components/FriendsView';
-import FriendLibraryView from './components/FriendLibraryView';
+import ChatBox from './components/ChatBox';
+
+// ... (existing imports)
+
+function App() {
+  // ... (existing state)
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
+  // Chat Unread Badge
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // ... (existing socket listeners)
+
+  // Inside initSocket or useEffect
+  useEffect(() => {
+    // ...
+    newSocket.on('host_promoted', (newHostId) => {
+      // ... (existing)
+    });
+
+    // CHAT LISTENER
+    newSocket.on('receive_message', (msg) => {
+      setMessages((prev) => [...prev, msg]);
+      if (!showChat) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
+    // ...
+  }, []);
+
+  // When opening chat, reset badge
+  const toggleChat = () => {
+    setShowChat(!showChat);
+    if (!showChat) setUnreadCount(0);
+  };
+
+  const sendMessage = (text) => {
+    if (socket && room) {
+      socket.emit('send_message', { roomId: room.roomId, message: text, username: user });
+    }
+  };
+
+  // ... (Render)
+
+  return (
+    <div className="app-container">
+      {/* ... (existing UI) */}
+
+      {/* SHOW CHAT only if in a room */}
+      {room && gameStatus !== 'results' && ( // Maybe show in results too? User choice. Let's show it everywhere inside a room.
+        <>
+          <button className="chat-btn-float" onClick={toggleChat}>
+            💬
+            {unreadCount > 0 && <span className="chat-badge">{unreadCount}</span>}
+          </button>
+          <ChatBox
+            isOpen={showChat}
+            onClose={() => setShowChat(false)}
+            messages={messages}
+            onSendMessage={sendMessage}
+            currentUsername={user}
+          />
+        </>
+      )}
+    </div>
+  )
+}
+
 import { supabase } from './supabaseClient';
 
 // Constants
