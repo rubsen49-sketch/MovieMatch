@@ -228,6 +228,17 @@
   color: var(--red);
 }
 
+
+/* --- CONTENT AREA (Layout Core) --- */
+.content-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  position: relative;
+  background: linear-gradient(to bottom, #111, #000);
+  width: 100%;
+  /* Ensure it takes full width if flex fails */
+}
+
 /* Hide Sidebar on Mobile (Future TODO: Hamburger menu) - For now Desktop First as requested */
 @media (max-width: 768px) {
   .app-sidebar {
