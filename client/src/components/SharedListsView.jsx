@@ -87,14 +87,103 @@ const SharedListsView = ({ currentUser }) => {
 		else fetchLists();
 	};
 
+	// --- MEMBER LOGIC ---
+	const [members, setMembers] = useState([]);
+	const [showAddMember, setShowAddMember] = useState(false);
+	const [myFriends, setMyFriends] = useState([]);
+
+	const fetchMembers = async (listId) => {
+		// Fetch members with profiles
+		const { data, error } = await supabase
+			.from('shared_list_members')
+			.select('user_id, profiles(username)')
+			.eq('list_id', listId);
+
+		if (error) console.error(error);
+		else setMembers(data.map(d => ({ id: d.user_id, username: d.profiles?.username })));
+	};
+
+	const fetchMyFriends = async () => {
+		// Reusing logic from FriendsView roughly
+		// Get friends where I am user_id OR friend_id (complex if bidirectional, schema assumes direction?)
+		// Schema: user_id, friend_id. Usually we check both directions or duplicate.
+		// Let's assume user_id = me.
+		const { data, error } = await supabase
+			.from('friendships')
+			.select('friend_id, profiles!friendships_friend_id_fkey(username, id)')
+			.eq('user_id', currentUser.id);
+
+		if (data) {
+			setMyFriends(data.map(d => d.profiles));
+		}
+	};
+
+	const addMember = async (friendId) => {
+		if (!selectedList) return;
+		const { error } = await supabase
+			.from('shared_list_members')
+			.insert({ list_id: selectedList.id, user_id: friendId });
+
+		if (error) alert("Erreur ajout (déjà membre ?)");
+		else {
+			alert("Membre ajouté !");
+			setShowAddMember(false);
+			fetchMembers(selectedList.id);
+		}
+	};
+
+	useEffect(() => {
+		if (view === 'detail' && selectedList) {
+			fetchMembers(selectedList.id);
+		}
+	}, [view, selectedList]);
+
+	useEffect(() => {
+		if (showAddMember) {
+			fetchMyFriends();
+		}
+	}, [showAddMember]);
+
 	// --- DETAIL VIEW ---
 	if (view === 'detail' && selectedList) {
 		return (
 			<div className="friend-library" style={{ background: '#222' }}>
 				<div className="friend-lib-header">
 					<button className="unified-btn secondary" onClick={() => setView('list')}>⬅ Retour</button>
-					<h2>{selectedList.name}</h2>
+					<div>
+						<h2 style={{ margin: 0 }}>{selectedList.name}</h2>
+						<small style={{ color: '#aaa', display: 'flex', alignItems: 'center', gap: 5 }}>
+							Membres: {members.map(m => m.username || 'Inconnu').join(', ')}
+							{selectedList.owner_id === currentUser?.id && (
+								<button
+									className="unified-btn secondary"
+									style={{ padding: '2px 8px', fontSize: 12 }}
+									onClick={() => setShowAddMember(true)}
+								>
+									+
+								</button>
+							)}
+						</small>
+					</div>
 				</div>
+
+				{showAddMember && (
+					<div className="modal-overlay" style={{ zIndex: 1100 }}>
+						<div className="modal-content" style={{ maxWidth: 350, background: '#333', color: 'white' }}>
+							<h3>Ajouter un membre</h3>
+							<div className="friend-list" style={{ maxHeight: 200, overflowY: 'auto' }}>
+								{myFriends.length === 0 && <p>Aucun ami à ajouter.</p>}
+								{myFriends.map(f => (
+									<div key={f.id} className="friend-item" onClick={() => addMember(f.id)} style={{ cursor: 'pointer' }}>
+										<span>{f.username}</span>
+										<span>➕</span>
+									</div>
+								))}
+							</div>
+							<button className="unified-btn secondary" style={{ marginTop: 10, width: '100%' }} onClick={() => setShowAddMember(false)}>Annuler</button>
+						</div>
+					</div>
+				)}
 
 				{/* LIST CONTENT */}
 				<div className="matches-grid view-grid">
@@ -104,18 +193,9 @@ const SharedListsView = ({ currentUser }) => {
 					{(selectedList.movies || []).map(m => (
 						<div key={m.id}>
 							<MatchItem movieId={m.id} />
-							{/* Note: MatchItem fetches details. Ideally we pass full object if we have it? 
-                                 Check MatchItem logic. It takes movieId and fetches? 
-                                 Or if we modify MatchItem to accept 'movieData' prop to avoid fetch.
-                                 Let's assume standard MatchItem for now. 
-                             */}
 						</div>
 					))}
 				</div>
-
-				{/* Note: Adding movies requires separate logic (from search results). 
-                    Here we arguably just View. 
-                */}
 			</div>
 		);
 	}
