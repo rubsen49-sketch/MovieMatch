@@ -303,7 +303,19 @@ function App() {
 
   const renderModal = () => {
     if (!detailsMovie) return null;
-    return <MovieDetailModal movie={detailsMovie} onClose={() => setDetailsMovie(null)} />;
+
+    const libraryItem = savedMatches.find(m => m.id === detailsMovie.id);
+    // Handle legacy number format (assume 'to_watch') or object format
+    const currentStatus = libraryItem ? (typeof libraryItem === 'number' ? 'to_watch' : libraryItem.status) : null;
+
+    return (
+      <MovieDetailModal
+        movie={detailsMovie}
+        onClose={() => setDetailsMovie(null)}
+        currentStatus={currentStatus}
+        onUpdateStatus={updateMovieStatus}
+      />
+    );
   };
 
   if (showMyMatches) {
