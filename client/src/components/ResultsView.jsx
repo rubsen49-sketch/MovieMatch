@@ -61,7 +61,8 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 				</div>
 
 				<button
-					className={`btn-select-mode ${isSelectionMode ? 'active' : ''}`}
+					className={`unified-btn ${isSelectionMode ? 'primary' : 'secondary'}`}
+					style={{ width: 'auto', padding: '5px 15px', fontSize: '0.9rem' }}
 					onClick={() => {
 						setIsSelectionMode(!isSelectionMode);
 						setSelectedIds([]);

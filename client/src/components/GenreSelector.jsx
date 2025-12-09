@@ -13,7 +13,7 @@ const GenreSelector = ({ selectedGenre, toggleGenre, onValidate, yearRange, setY
 
 	return (
 		<div className="welcome-screen">
-			<h2>Filtres</h2>
+			<h2 style={{ padding: '0 var(--space-md)' }}>Filtres</h2>
 
 			{/* ANNEES */}
 			<div className="filter-section" style={{ width: '100%', marginBottom: '20px', textAlign: 'center' }}>
@@ -37,7 +37,7 @@ const GenreSelector = ({ selectedGenre, toggleGenre, onValidate, yearRange, setY
 				</div>
 			</div>
 
-			<p style={{ color: 'var(--text-sub)', marginBottom: '15px', fontSize: '0.9rem' }}>
+			<p style={{ color: 'var(--text-sub)', marginBottom: '15px', fontSize: '0.9rem', padding: '0 var(--space-md)' }}>
 				{selectedGenre.length === 0 ? "Tous les genres sélectionnés" : `${selectedGenre.length} genres sélectionnés`}
 			</p>
 
@@ -58,7 +58,7 @@ const GenreSelector = ({ selectedGenre, toggleGenre, onValidate, yearRange, setY
 
 			<button
 				className="unified-btn validate"
-				style={{ marginTop: '20px' }}
+				style={{ marginTop: '20px', width: 'auto', minWidth: '200px', margin: '20px auto', display: 'flex' }}
 				onClick={onValidate}
 			>
 				Valider les filtres

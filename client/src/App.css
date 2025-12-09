@@ -1482,7 +1482,7 @@ select:focus {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: 10px;
-  padding: 10px 0;
+  padding: 10px var(--space-md);
   max-height: 50vh;
   overflow-y: auto;
 }
@@ -1511,4 +1511,46 @@ select:focus {
   color: white;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+/* Return to Game Pill */
+.return-to-game-pill {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--primary);
+  padding: 12px 20px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  animation: pulse-border 2s infinite;
+}
+
+.return-to-game-pill span {
+  color: var(--primary);
+  font-size: 0.9rem;
+}
+
+.return-to-game-pill strong {
+  color: white;
+  font-size: 0.9rem;
+}
+
+@keyframes pulse-border {
+  0% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 10px rgba(229, 9, 20, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(229, 9, 20, 0);
+  }
 }

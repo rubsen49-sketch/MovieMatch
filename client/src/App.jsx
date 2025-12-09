@@ -15,6 +15,7 @@ import SwipeDeck from './components/SwipeDeck';
 import WelcomeScreen from './components/WelcomeScreen';
 import ResultsView from './components/ResultsView'; // Needed for direct tab access
 import FriendsView from './components/FriendsView'; // Needed for direct tab access
+import AuthModal from './components/AuthModal';
 
 // ... (existing imports)
 
@@ -376,7 +377,7 @@ function App() {
   };
 
   const renderContent = () => {
-    // 1. MATCH OVERLAY (Top Priority)
+    // 1. MATCH OVERLAY (Top Priority - Global)
     if (match) {
       return (
         <div className="match-overlay">
@@ -401,7 +402,40 @@ function App() {
       );
     }
 
-    // 2. IN ROOM (Lobby or Game)
+    // 2. TABS NAVIGATION (Matches, Friends) - Priority over Lobby/Home
+    if (activeTab === 'matches') {
+      return (
+        <ResultsView
+          savedMatches={savedMatches}
+          onClose={() => setActiveTab('home')}
+          resetMyMatches={resetMyMatches}
+          onDetails={(movieData) => setDetailsMovie(movieData)}
+          onUpdateStatus={updateMovieStatus}
+          onRemove={removeMovie}
+          onBulkUpdate={bulkUpdateMovieStatus}
+          onBulkRemove={bulkRemoveMovies}
+          currentUser={user}
+        />
+      );
+    }
+
+    if (activeTab === 'friends') {
+      return (
+        <FriendsView
+          onClose={() => setActiveTab('home')}
+          currentUser={user}
+          onViewLibrary={(friend) => {
+            console.log("View friend library", friend);
+            setFriendLibraryTarget(friend);
+          }}
+          onInvite={handleInviteFriend}
+          isInRoom={isInRoom}
+        />
+      );
+    }
+
+    // 3. HOME TAB (Welcome OR Game/Lobby)
+    // If we are in a room, Home tab becomes the Game View
     if (isInRoom) {
       if (!gameStarted) {
         return showGenreSelector ? (
@@ -455,58 +489,24 @@ function App() {
       }
     }
 
-    // 3. TABS NAVIGATION (Home, Matches, Friends)
-    switch (activeTab) {
-      case 'matches':
-        return (
-          <ResultsView
-            savedMatches={savedMatches}
-            onClose={() => setActiveTab('home')}
-            resetMyMatches={resetMyMatches}
-            onDetails={(movieData) => setDetailsMovie(movieData)}
-            onUpdateStatus={updateMovieStatus}
-            onRemove={removeMovie}
-            onBulkUpdate={bulkUpdateMovieStatus}
-            onBulkRemove={bulkRemoveMovies}
-            currentUser={user}
-          />
-        );
-      case 'friends':
-        return (
-          <FriendsView
-            onClose={() => setActiveTab('home')}
-            currentUser={user}
-            onViewLibrary={(friend) => {
-              // TODO: Handle friend library view better with the new layout
-              // For now we might need a sub-state or just minimal handling
-              console.log("View friend library", friend);
-              setFriendLibraryTarget(friend);
-            }}
-            onInvite={handleInviteFriend}
-            isInRoom={isInRoom}
-          />
-        );
-      case 'home':
-      default:
-        // Check if we are showing Auth Modal over home
-        if (showAuthModal) return <AuthModal onClose={() => setShowAuthModal(false)} />;
+    // Default Home (No Game)
+    if (showAuthModal) return <AuthModal onClose={() => setShowAuthModal(false)} />;
 
-        return (
-          <WelcomeScreen
-            user={user}
-            view={view}
-            setView={setView}
-            room={room}
-            setRoom={setRoom}
-            generateRoomCode={generateRoomCode}
-            joinLobby={joinLobby}
-            showAuthModal={showAuthModal}
-            setShowAuthModal={setShowAuthModal}
-            setShowFriends={() => setActiveTab('friends')} // Redirect to tab
-            setShowMyMatches={() => setActiveTab('matches')} // Redirect to tab
-          />
-        );
-    }
+    return (
+      <WelcomeScreen
+        user={user}
+        view={view}
+        setView={setView}
+        room={room}
+        setRoom={setRoom}
+        generateRoomCode={generateRoomCode}
+        joinLobby={joinLobby}
+        showAuthModal={showAuthModal}
+        setShowAuthModal={setShowAuthModal}
+        setShowFriends={() => setActiveTab('friends')}
+        setShowMyMatches={() => setActiveTab('matches')}
+      />
+    );
   };
 
   // ... (keep props and logic)
@@ -547,12 +547,28 @@ function App() {
       onLogout={() => supabase.auth.signOut()}
     >
       <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
+
+      {/* Return to Game Pill */}
+      {isInRoom && activeTab !== 'home' && (
+        <motion.div
+          initial={{ y: 50, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 50, opacity: 0 }}
+          className="return-to-game-pill"
+          onClick={() => setActiveTab('home')}
+        >
+          <span>🔴 Partie en cours</span>
+          <strong>Revenir ↩️</strong>
+        </motion.div>
+      )}
+
       {renderModal()}
 
       {/* Animated Content Wrapper */}
       {renderAnimatedContent()}
     </MainLayout>
   );
+
 }
 
 export default App;
