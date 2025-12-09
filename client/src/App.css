@@ -1116,6 +1116,25 @@ select:focus {
   color: var(--red);
 }
 
+.friend-btn-bubble {
+  background: #333;
+  color: white;
+  border: 1px solid #555;
+  border-radius: 20px;
+  /* Bubble shape */
+  padding: 8px 15px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.friend-btn-bubble:hover {
+  background: var(--gold);
+  color: black;
+  border-color: var(--gold);
+  transform: scale(1.05);
+}
+
 /* --- MOBILE RESPONSIVE --- */
 .view-toggles {
   display: flex;

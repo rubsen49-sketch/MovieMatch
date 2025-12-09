@@ -24,10 +24,20 @@ const AuthModal = ({ onClose }) => {
 					password,
 					options: {
 						data: { username: username }, // Store username in metadata
-						emailRedirectTo: window.location.origin // Ensure redirect goes to current site (localhost or Vercel)
+						emailRedirectTo: window.location.origin
 					}
 				});
 				if (error) throw error;
+
+				// Force create profile immediately if user is created
+				if (data?.user) {
+					await supabase.from('profiles').upsert({
+						id: data.user.id,
+						username: username,
+						updated_at: new Date()
+					});
+				}
+
 				setMessage("Compte créé avec succès ! Vous êtes connecté.");
 				setTimeout(onClose, 1500); // Close automatically
 

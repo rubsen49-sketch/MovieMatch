@@ -546,16 +546,18 @@ function App() {
           {!user ? (
             <button onClick={() => setShowAuthModal(true)} className="auth-btn">👤 Compte</button>
           ) : (
-            <div className="auth-status">
-              <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
               <button
                 onClick={() => setShowFriends(true)}
-                className="auth-btn"
-                style={{ marginRight: 10, background: 'transparent', border: '1px solid #555' }}
+                className="auth-btn friend-btn-bubble"
               >
                 👥 Amis
               </button>
-              <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
+
+              <div className="auth-status">
+                <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
+                <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
+              </div>
             </div>
           )}
         </div>
