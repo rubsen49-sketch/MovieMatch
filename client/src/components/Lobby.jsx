@@ -118,7 +118,7 @@ const Lobby = ({
 
 			{/* PLAYER LIST */}
 			<div className="player-list" style={{ display: 'flex', flexDirection: 'column', gap: 5, maxWidth: 300, margin: '10px auto 20px auto' }}>
-				{players.map(p => {
+				{(players || []).map(p => {
 					// Check if it's me
 					const isMe = currentUser && currentUser.user_metadata?.username === p.username;
 					// If not logged in, currentUser is null.
