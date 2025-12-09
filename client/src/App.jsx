@@ -470,20 +470,23 @@ function App() {
   if (!isInRoom) {
     return (
       <div className="welcome-screen">
+        <div className="top-right-auth">
+          {!user ? (
+            <button onClick={() => setShowAuthModal(true)} className="auth-btn">👤 Compte</button>
+          ) : (
+            <div className="auth-status">
+              <span>{user.email.split('@')[0]}</span>
+              <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
+            </div>
+          )}
+        </div>
+
         <h1>Movie Match 🍿</h1>
         {view === "menu" && (
           <div className="menu-buttons">
             <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
             <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
             <button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
-            {!user ? (
-              <button onClick={() => setShowAuthModal(true)} className="unified-btn quit" style={{ marginTop: 10 }}>Se connecter (Sauvegarde)</button>
-            ) : (
-              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                <span style={{ color: '#4ade80', fontSize: '0.8rem' }}>Connecté : {user.email}</span>
-                <button onClick={() => supabase.auth.signOut()} className="unified-btn quit">Se déconnecter</button>
-              </div>
-            )}
           </div>
         )}
         {view === "join" && (

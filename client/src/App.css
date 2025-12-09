@@ -942,3 +942,58 @@ select:focus {
   gap: 10px;
   width: 100%;
 }
+
+/* --- AUTH TOP RIGHT --- */
+.top-right-auth {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.auth-btn {
+  background: rgba(229, 9, 20, 0.2);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  padding: 8px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  transition: all 0.2s;
+  text-transform: uppercase;
+}
+
+.auth-btn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+.auth-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0,0,0,0.5);
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid #333;
+}
+
+.auth-status span {
+  font-size: 0.8rem;
+  color: var(--gold);
+  font-weight: bold;
+}
+
+.auth-logout {
+  background: transparent;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.auth-logout:hover {
+  color: var(--red);
+}

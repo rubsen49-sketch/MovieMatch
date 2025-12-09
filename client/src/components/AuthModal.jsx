@@ -32,14 +32,14 @@ const AuthModal = ({ onClose }) => {
 		<div className="modal-overlay" onClick={onClose}>
 			<div className="modal-content" onClick={e => e.stopPropagation()} style={{ height: 'auto', padding: '30px' }}>
 				<button className="close-modal" onClick={onClose}>✕</button>
-				<h2 style={{ textAlign: 'center', marginBottom: 20 }}>Connexion</h2>
+				<h2 style={{ textAlign: 'center', marginBottom: 20 }}>Créer un compte / Se connecter</h2>
 
 				{message ? (
 					<div style={{ textAlign: 'center', color: '#4ade80', marginBottom: 20 }}>{message}</div>
 				) : (
 					<form onSubmit={handleLogin} className="input-group" style={{ boxShadow: 'none', padding: 0 }}>
 						<p style={{ textAlign: 'center', marginBottom: 20, color: '#aaa', fontSize: '0.9rem' }}>
-							Entrez votre email pour recevoir un lien de connexion instantané. Pas de mot de passe à retenir !
+							Entrez votre email. Si vous n'avez pas de compte, il sera créé automatiquement !
 						</p>
 						<input
 							type="email"
