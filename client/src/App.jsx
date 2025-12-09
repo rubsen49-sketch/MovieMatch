@@ -417,6 +417,5 @@ return (
     )}
   </>
 );
-}
 
 export default App;
