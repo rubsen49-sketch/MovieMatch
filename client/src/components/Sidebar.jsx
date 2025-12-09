@@ -50,6 +50,9 @@ const Sidebar = ({ activeTab, setActiveTab, user, onLogout, isOpen, onClose }) =
 							</div>
 						</div>
 					)}
+					<div className="copyright-notice" style={{ marginTop: '20px', fontSize: '0.7rem', color: '#666', textAlign: 'center', padding: '0 10px' }}>
+						© 2025 Namousen.<br />Tous droits réservés.
+					</div>
 				</div>
 			</aside>
 		</>
