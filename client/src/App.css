@@ -1190,7 +1190,7 @@ select:focus {
 .btn-library {
   width: auto;
   padding: 5px 15px;
-  fontSize: 0.8rem;
+  font-size: 0.8rem;
   display: flex;
   align-items: center;
   gap: 5px;
