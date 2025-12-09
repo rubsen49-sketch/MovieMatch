@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useGameSocket } from './hooks/useGameSocket';
 import './App.css';
@@ -508,6 +509,36 @@ function App() {
     }
   };
 
+  // ... (keep props and logic)
+
+  // --- RENDER CONTENT WRAPPER ---
+  const renderAnimatedContent = () => {
+    // Unique key determination for animations
+    let key = activeTab; // Default key
+    if (activeTab === 'home') {
+      if (isInRoom && !gameStarted) key = 'lobby';
+      else if (isInRoom && gameStarted) key = 'game';
+      else if (showAuthModal) key = 'auth';
+      else if (match) key = 'match';
+      else key = 'dashboard';
+    }
+
+    return (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={key}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.2 }}
+          style={{ width: '100%', height: '100%' }}
+        >
+          {renderContent()}
+        </motion.div>
+      </AnimatePresence>
+    );
+  };
+
   return (
     <MainLayout
       activeTab={activeTab}
@@ -517,10 +548,9 @@ function App() {
     >
       <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
       {renderModal()}
-      {/* Friend Library Modal logic needs to remain accessible if triggered */}
-      {/* {friendLibraryTarget && <FriendLibraryView ... />} */}
 
-      {renderContent()}
+      {/* Animated Content Wrapper */}
+      {renderAnimatedContent()}
     </MainLayout>
   );
 }
