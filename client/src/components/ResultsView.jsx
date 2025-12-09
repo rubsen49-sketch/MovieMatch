@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import MatchItem from './MatchItem';
+import SharedListsView from './SharedListsView';
 
-const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdateStatus, onRemove, onBulkUpdate, onBulkRemove }) => {
+const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdateStatus, onRemove, onBulkUpdate, onBulkRemove, currentUser }) => {
 	const [activeTab, setActiveTab] = useState('to_watch');
 	const [isSelectionMode, setIsSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
@@ -83,68 +84,82 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 				>
 					Vus ({savedMatches.filter(m => typeof m === 'object' && m.status === 'watched').length})
 				</button>
+				{currentUser && (
+					<button
+						className={`tab-btn ${activeTab === 'shared' ? 'active' : ''}`}
+						onClick={() => { setActiveTab('shared'); setIsSelectionMode(false); }}
+					>
+						Partagées 👥
+					</button>
+				)}
 			</div>
 
-			<div className={`matches-grid ${viewMode === 'list' ? 'view-list' : 'view-grid'}`}>
-				{matchesToShow.map(item => {
-					const movieId = typeof item === 'number' ? item : item.id;
-					const isSelected = selectedIds.includes(movieId);
+			{activeTab === 'shared' ? (
+				<div style={{ padding: '0 20px', height: '100%', overflowY: 'auto' }}>
+					<SharedListsView currentUser={currentUser} />
+				</div>
+			) : (
+				<div className={`matches-grid ${viewMode === 'list' ? 'view-list' : 'view-grid'}`}>
+					{matchesToShow.map(item => {
+						const movieId = typeof item === 'number' ? item : item.id;
+						const isSelected = selectedIds.includes(movieId);
 
-					return (
-						<div
-							key={movieId}
-							style={{ position: 'relative' }}
-							className={isSelectionMode && isSelected ? 'item-selected' : ''}
-							onClick={() => isSelectionMode && toggleSelection(movieId)}
-						>
-							<MatchItem
-								movieId={movieId}
-								onClick={isSelectionMode ? () => toggleSelection(movieId) : onDetails}
-							/>
+						return (
+							<div
+								key={movieId}
+								style={{ position: 'relative' }}
+								className={isSelectionMode && isSelected ? 'item-selected' : ''}
+								onClick={() => isSelectionMode && toggleSelection(movieId)}
+							>
+								<MatchItem
+									movieId={movieId}
+									onClick={isSelectionMode ? () => toggleSelection(movieId) : onDetails}
+								/>
 
-							{/* Checkbox Overlay in Selection Mode */}
-							{isSelectionMode && (
-								<div className={`selection-overlay ${isSelected ? 'checked' : ''}`}>
-									<div className="checkbox-circle">
-										{isSelected && '✓'}
+								{/* Checkbox Overlay in Selection Mode */}
+								{isSelectionMode && (
+									<div className={`selection-overlay ${isSelected ? 'checked' : ''}`}>
+										<div className="checkbox-circle">
+											{isSelected && '✓'}
+										</div>
 									</div>
-								</div>
-							)}
+								)}
 
-							{/* Standard Actions (Only if NOT in selection mode) */}
-							{!isSelectionMode && (
-								<div className="card-actions">
-									{activeTab === 'to_watch' && (
+								{/* Standard Actions (Only if NOT in selection mode) */}
+								{!isSelectionMode && (
+									<div className="card-actions">
+										{activeTab === 'to_watch' && (
+											<button
+												className="action-btn check"
+												title="Marquer comme vu"
+												onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'watched'); }}
+											>
+												✔️
+											</button>
+										)}
+										{activeTab === 'watched' && (
+											<button
+												className="action-btn"
+												title="Remettre à voir"
+												onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'to_watch'); }}
+											>
+												↩️
+											</button>
+										)}
 										<button
-											className="action-btn check"
-											title="Marquer comme vu"
-											onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'watched'); }}
+											className="action-btn delete"
+											title="Supprimer"
+											onClick={(e) => { e.stopPropagation(); onRemove(movieId); }}
 										>
-											✔️
+											🗑️
 										</button>
-									)}
-									{activeTab === 'watched' && (
-										<button
-											className="action-btn"
-											title="Remettre à voir"
-											onClick={(e) => { e.stopPropagation(); onUpdateStatus(movieId, 'to_watch'); }}
-										>
-											↩️
-										</button>
-									)}
-									<button
-										className="action-btn delete"
-										title="Supprimer"
-										onClick={(e) => { e.stopPropagation(); onRemove(movieId); }}
-									>
-										🗑️
-									</button>
-								</div>
-							)}
-						</div>
-					);
-				})}
-			</div>
+									</div>
+								)}
+							</div>
+						);
+					})}
+				</div>
+			)}
 
 			{/* BULK ACTION BAR */}
 			{isSelectionMode && selectedIds.length > 0 && (
