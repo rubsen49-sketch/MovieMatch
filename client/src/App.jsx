@@ -6,11 +6,14 @@ import { Analytics } from "@vercel/analytics/react";
 import toast, { Toaster } from 'react-hot-toast';
 
 // Components
+import MainLayout from './components/MainLayout'; // [NEW] Wrapper
 import MovieDetailModal from './components/MovieDetailModal';
 import GenreSelector from './components/GenreSelector';
 import Lobby from './components/Lobby';
 import SwipeDeck from './components/SwipeDeck';
 import WelcomeScreen from './components/WelcomeScreen';
+import ResultsView from './components/ResultsView'; // Needed for direct tab access
+import FriendsView from './components/FriendsView'; // Needed for direct tab access
 
 // ... (existing imports)
 
@@ -38,6 +41,9 @@ function App() {
   const [view, setView] = useState("menu");
   const [showGenreSelector, setShowGenreSelector] = useState(false);
   const [providersDisplay, setProvidersDisplay] = useState([]);
+
+  // [NEW] Navigation State
+  const [activeTab, setActiveTab] = useState('home'); // 'home', 'matches', 'friends'
 
   // Advanced Filter Defaults
   const [yearRange, setYearRange] = useState({ min: 1970, max: new Date().getFullYear() });
@@ -68,8 +74,8 @@ function App() {
   const [user, setUser] = useState(null);
   const userRef = useRef(user);
   useEffect(() => { userRef.current = user; }, [user]);
-  const [showMyMatches, setShowMyMatches] = useState(false);
-  const [showFriends, setShowFriends] = useState(false);
+  // const [showMyMatches, setShowMyMatches] = useState(false); // Deprecated in favor of activeTab
+  // const [showFriends, setShowFriends] = useState(false); // Deprecated in favor of activeTab
   const [friendLibraryTarget, setFriendLibraryTarget] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
@@ -197,11 +203,6 @@ function App() {
   // Wrapper for WelcomeScreen to use hook's joinRoom cleanly
   const joinLobby = (roomCodeToJoin = null) => {
     if (roomCodeToJoin) {
-      // Explicit join/create logic handled inside hook if we called createRoom?
-      // Wait, App.jsx joinLobby was mixing create vs join.
-      // The hook has createRoom and joinRoom.
-      // If we generate code -> createRoom.
-      // If we type code -> joinRoom.
       joinRoom(roomCodeToJoin);
     } else if (room) {
       joinRoom(room);
@@ -210,11 +211,6 @@ function App() {
 
   const generateRoomCode = () => {
     createRoom();
-    // createRoom in hook handles updating `room` state and emitting events.
-    // However, createRoom generates its own code internally in the hook version I wrote.
-    // So we just call it. But wait, `createRoom` in hook sets the room state.
-    // Does it switch view to lobby? hook updates `isInRoom`. 
-    // App.jsx effect observes `isInRoom`.
     setView("lobby"); // Safe to set view here?
   };
 
@@ -378,70 +374,123 @@ function App() {
     );
   };
 
-  return (
-    <>
-      <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
-      {renderModal()}
+  const renderContent = () => {
+    // 1. MATCH OVERLAY (Top Priority)
+    if (match) {
+      return (
+        <div className="match-overlay">
+          <h1 className="match-title">IT'S A MATCH!</h1>
+          {match.moviePoster && (
+            <img
+              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
+              alt={match.movieTitle}
+              className="match-poster clickable"
+              onClick={() => setDetailsMovie({
+                id: match.movieId,
+                title: match.movieTitle,
+                poster_path: match.moviePoster,
+                overview: match.overview
+              })}
+            />
+          )}
+          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+          <h2>{match.movieTitle}</h2>
+          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
+        </div>
+      );
+    }
 
-      <main className="app-main">
-        {match ? (
-          <div className="match-overlay">
-            <h1 className="match-title">IT'S A MATCH!</h1>
-            {match.moviePoster && (
-              <img
-                src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
-                alt={match.movieTitle}
-                className="match-poster clickable"
-                onClick={() => setDetailsMovie({
-                  id: match.movieId,
-                  title: match.movieTitle,
-                  poster_path: match.moviePoster,
-                  overview: match.overview
-                })}
-              />
-            )}
-            <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
-            <h2>{match.movieTitle}</h2>
-            <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
-          </div>
-        ) : isInRoom && !gameStarted ? (
-          showGenreSelector ? (
-            <GenreSelector
-              selectedGenre={selectedGenre}
-              toggleGenre={toggleGenre}
-              yearRange={yearRange}
-              setYearRange={setYearRange}
-              onValidate={() => setShowGenreSelector(false)}
-            />
-          ) : (
-            <Lobby
-              room={room}
-              playerCount={playerCount}
-              players={players}
-              currentUser={user}
-              isHost={isHost}
-              onAddFriend={handleAddFriend}
-              settings={{
-                providers: selectedProviders,
-                voteMode: voteMode,
-                rating: minRating,
-                genre: selectedGenre
-              }}
-              updateSettings={updateSettings}
-              startGame={startGame}
-              leaveRoom={leaveRoom}
-              shareCode={async () => {
-                if (navigator.share) {
-                  await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
-                } else {
-                  await navigator.clipboard.writeText(room);
-                  alert("Code copié !");
-                }
-              }}
-              onOpenGenreSelector={() => setShowGenreSelector(true)}
-            />
-          )
-        ) : !isInRoom ? (
+    // 2. IN ROOM (Lobby or Game)
+    if (isInRoom) {
+      if (!gameStarted) {
+        return showGenreSelector ? (
+          <GenreSelector
+            selectedGenre={selectedGenre}
+            toggleGenre={toggleGenre}
+            yearRange={yearRange}
+            setYearRange={setYearRange}
+            onValidate={() => setShowGenreSelector(false)}
+          />
+        ) : (
+          <Lobby
+            room={room}
+            playerCount={playerCount}
+            players={players}
+            currentUser={user}
+            isHost={isHost}
+            onAddFriend={handleAddFriend}
+            settings={{
+              providers: selectedProviders,
+              voteMode: voteMode,
+              rating: minRating,
+              genre: selectedGenre
+            }}
+            updateSettings={updateSettings}
+            startGame={startGame}
+            leaveRoom={leaveRoom}
+            shareCode={async () => {
+              if (navigator.share) {
+                await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
+              } else {
+                await navigator.clipboard.writeText(room);
+                alert("Code copié !");
+              }
+            }}
+            onOpenGenreSelector={() => setShowGenreSelector(true)}
+          />
+        );
+      } else {
+        return (
+          <SwipeDeck
+            movies={movies}
+            currentIndex={currentIndex}
+            handleSwipe={handleSwipe}
+            handleUndo={handleUndo}
+            setDetailsMovie={setDetailsMovie}
+            leaveRoom={leaveRoom}
+            providersDisplay={providersDisplay}
+          />
+        );
+      }
+    }
+
+    // 3. TABS NAVIGATION (Home, Matches, Friends)
+    switch (activeTab) {
+      case 'matches':
+        return (
+          <ResultsView
+            savedMatches={savedMatches}
+            onClose={() => setActiveTab('home')}
+            resetMyMatches={resetMyMatches}
+            onDetails={(movieData) => setDetailsMovie(movieData)}
+            onUpdateStatus={updateMovieStatus}
+            onRemove={removeMovie}
+            onBulkUpdate={bulkUpdateMovieStatus}
+            onBulkRemove={bulkRemoveMovies}
+            currentUser={user}
+          />
+        );
+      case 'friends':
+        return (
+          <FriendsView
+            onClose={() => setActiveTab('home')}
+            currentUser={user}
+            onViewLibrary={(friend) => {
+              // TODO: Handle friend library view better with the new layout
+              // For now we might need a sub-state or just minimal handling
+              console.log("View friend library", friend);
+              setFriendLibraryTarget(friend);
+            }}
+            onInvite={handleInviteFriend}
+            isInRoom={isInRoom}
+          />
+        );
+      case 'home':
+      default:
+        // Check if we are showing Auth Modal over home
+        if (showAuthModal) return <AuthModal onClose={() => setShowAuthModal(false)} />;
+
+        return (
           <WelcomeScreen
             user={user}
             view={view}
@@ -452,35 +501,27 @@ function App() {
             joinLobby={joinLobby}
             showAuthModal={showAuthModal}
             setShowAuthModal={setShowAuthModal}
-            showFriends={showFriends}
-            setShowFriends={setShowFriends}
-            showMyMatches={showMyMatches}
-            setShowMyMatches={setShowMyMatches}
-            savedMatches={savedMatches}
-            resetMyMatches={resetMyMatches}
-            setDetailsMovie={setDetailsMovie}
-            updateMovieStatus={updateMovieStatus}
-            removeMovie={removeMovie}
-            bulkUpdateMovieStatus={bulkUpdateMovieStatus}
-            bulkRemoveMovies={bulkRemoveMovies}
-            friendLibraryTarget={friendLibraryTarget}
-            setFriendLibraryTarget={setFriendLibraryTarget}
-            handleInviteFriend={handleInviteFriend}
-            isInRoom={isInRoom}
+            setShowFriends={() => setActiveTab('friends')} // Redirect to tab
+            setShowMyMatches={() => setActiveTab('matches')} // Redirect to tab
           />
-        ) : (
-          <SwipeDeck
-            movies={movies}
-            currentIndex={currentIndex}
-            handleSwipe={handleSwipe}
-            handleUndo={handleUndo}
-            setDetailsMovie={setDetailsMovie}
-            leaveRoom={leaveRoom}
-            providersDisplay={providersDisplay}
-          />
-        )}
-      </main>
-    </>
+        );
+    }
+  };
+
+  return (
+    <MainLayout
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      user={user}
+      onLogout={() => supabase.auth.signOut()}
+    >
+      <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
+      {renderModal()}
+      {/* Friend Library Modal logic needs to remain accessible if triggered */}
+      {/* {friendLibraryTarget && <FriendLibraryView ... />} */}
+
+      {renderContent()}
+    </MainLayout>
   );
 }
 

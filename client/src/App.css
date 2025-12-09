@@ -29,32 +29,158 @@
   animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
-/* --- LAYOUT WRAPPERS --- */
-/* Wrapper principal pour centrer l'app sur desktop */
+/* --- MAIN LAYOUT (GRID) --- */
+.main-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: black;
+}
+
+/* --- SIDEBAR --- */
+.app-sidebar {
+  width: 250px;
+  background: #111;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-md);
+  flex-shrink: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xl);
+  padding-left: var(--space-sm);
+}
+
+.sidebar-logo h1 {
+  color: var(--primary);
+  font-size: 2rem;
+  letter-spacing: -2px;
+}
+
+.logo-text {
+  font-weight: var(--fw-bold);
+  font-size: 1.2rem;
+  letter-spacing: 1px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  flex-grow: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  background: transparent;
+  border: none;
+  color: var(--text-sub);
+  padding: var(--space-md);
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.nav-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.nav-item.active {
+  background: rgba(229, 9, 20, 0.1);
+  color: var(--primary);
+  font-weight: var(--fw-bold);
+  border-left: 3px solid var(--primary);
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+}
+
+.sidebar-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: var(--space-md);
+}
+
+.user-profile {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.user-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--gold);
+  border-radius: 50%;
+  color: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.username {
+  font-size: 0.9rem;
+  color: white;
+}
+
+.logout-btn {
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+
+.logout-btn:hover {
+  color: var(--red);
+}
+
+
+/* --- CONTENT AREA --- */
+.content-area {
+  flex-grow: 1;
+  overflow-y: auto;
+  position: relative;
+  background: linear-gradient(to bottom, #111, #000);
+  /* Scrollbar custom */
+}
+
+/* Reset old app-main */
 .app-main {
   width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
-  position: relative;
-  overflow: hidden;
 }
 
-/* Media Query Desktop: Mode "Device" centré */
-@media (min-width: 768px) {
-  .app-main {
-    max-width: 500px;
-    /* Largeur mobile généreuse */
-    height: 95vh;
-    max-height: 900px;
-    margin: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 40px;
-    background: #000;
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
-    position: relative;
+/* Hide Sidebar on Mobile (Future TODO: Hamburger menu) - For now Desktop First as requested */
+@media (max-width: 768px) {
+  .app-sidebar {
+    display: none;
+    /* Temporary until hamburger */
   }
 }
+
 
 /* --- BUTTONS --- */
 .unified-btn {
