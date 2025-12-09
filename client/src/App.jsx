@@ -5,7 +5,6 @@ import './App.css';
 import { motion, useMotionValue, useTransform } from 'framer-motion';
 import { Analytics } from "@vercel/analytics/react";
 
-// ... (Garder les constantes SOCKET_URL, API_KEY, PLATFORMS, getUserId inchangées) ...
 const SOCKET_URL = import.meta.env.MODE === 'development' 
   ? "http://localhost:3001" 
   : "https://moviematch-backend-0om3.onrender.com";
@@ -13,6 +12,7 @@ const SOCKET_URL = import.meta.env.MODE === 'development'
 const socket = io.connect(SOCKET_URL);
 const API_KEY = "14b0ba35c145028146e0adf24bfcfd03"; 
 
+// Logos officiels (App Store links pour éviter les liens cassés)
 const PLATFORMS = [
   { id: 8, name: "Netflix", logo: "https://media.themoviedb.org/t/p/original/pbpMk2JmcoNnQwx5JGpXngfoWtp.jpg" },
   { id: 337, name: "Disney+", logo: "https://media.themoviedb.org/t/p/original/97yvRBw1GzX7fXprcF80er19ot.jpg" },
@@ -50,12 +50,11 @@ const getUserId = () => {
   return id;
 };
 
-// --- NOUVEAU COMPOSANT : MODALE DE DÉTAILS ---
+// --- COMPOSANT : MODALE DE DÉTAILS ---
 const MovieDetailModal = ({ movie, onClose }) => {
   const [fullDetails, setFullDetails] = useState(null);
 
   useEffect(() => {
-    // On demande : le film + les credits (acteurs) + les vidéos (trailers)
     axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`)
       .then(res => setFullDetails(res.data))
       .catch(err => console.error(err));
@@ -66,12 +65,10 @@ const MovieDetailModal = ({ movie, onClose }) => {
   const title = fullDetails.title;
   const posterSrc = fullDetails.poster_path ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}` : "";
   
-  // Logique pour trouver le trailer YouTube
   const trailer = fullDetails.videos?.results?.find(
     vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
   );
 
-  // Les 5 premiers acteurs
   const cast = fullDetails.credits?.cast?.slice(0, 5) || [];
 
   return (
@@ -85,7 +82,6 @@ const MovieDetailModal = ({ movie, onClose }) => {
         <button className="close-modal" onClick={onClose}>✕</button>
         
         <div className="modal-scroll">
-          {/* BANDE ANNONCE (si dispo) ou IMAGE */}
           {trailer ? (
             <div className="video-container">
               <iframe
@@ -102,16 +98,12 @@ const MovieDetailModal = ({ movie, onClose }) => {
 
           <div className="modal-text">
             <h2>{title}</h2>
-            
             <div className="meta-tags">
                {fullDetails.release_date && <span className="tag">{fullDetails.release_date.split('-')[0]}</span>}
                {fullDetails.runtime && <span className="tag">{fullDetails.runtime} min</span>}
                <span className="tag star">★ {fullDetails.vote_average?.toFixed(1)}</span>
             </div>
-
             <p className="modal-overview">{fullDetails.overview || "Pas de description."}</p>
-
-            {/* SECTION ACTEURS */}
             {cast.length > 0 && (
               <div className="cast-section">
                 <h3>Casting</h3>
@@ -137,8 +129,7 @@ const MovieDetailModal = ({ movie, onClose }) => {
   );
 };
 
-// ... (MatchItem reste inchangé) ...
-// Ajout de la prop 'onClick'
+// --- COMPOSANT : ITEM MATCH ---
 const MatchItem = ({ movieId, onClick }) => {
   const [movieData, setMovieData] = useState(null);
   
@@ -151,7 +142,6 @@ const MatchItem = ({ movieId, onClick }) => {
   if (!movieData) return <div className="mini-card">...</div>;
 
   return (
-    // Ajout du onClick sur le conteneur et de la classe clickable
     <div className="mini-card clickable" onClick={() => onClick(movieData)}>
       <img src={`https://image.tmdb.org/t/p/w300${movieData.poster_path}`} alt={movieData.title} />
       <h3>{movieData.title}</h3>
@@ -159,8 +149,8 @@ const MatchItem = ({ movieId, onClick }) => {
   );
 };
 
+// --- APPLICATION PRINCIPALE ---
 function App() {
-  // ... (États existants inchangés) ...
   const [room, setRoom] = useState("");
   const [isInRoom, setIsInRoom] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -184,12 +174,8 @@ function App() {
     const saved = localStorage.getItem('myMatches');
     return saved ? JSON.parse(saved) : [];
   });
+  const [detailsMovie, setDetailsMovie] = useState(null);
 
-  // --- NOUVEL ÉTAT ---
-  const [detailsMovie, setDetailsMovie] = useState(null); // Le film affiché en détail
-
-  // ... (Fonctions joinLobby, generateRoomCode, syncSettings, toggleProvider, fetchMovies inchangées) ...
-  
   const joinLobby = (roomCodeToJoin = null) => {
     const targetRoom = roomCodeToJoin || room;
     if (targetRoom !== "") {
@@ -257,30 +243,47 @@ function App() {
     syncSettings({ providers: newProviders });
   };
 
-  const fetchMovies = async () => {
-    // ... (début inchangé) ...
-    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
-    
-    // MODIFICATION ICI : On joint les IDs par une virgule pour l'API
-    if (selectedGenre.length > 0) {
-      // .join(',') transforme [28, 12] en "28,12"
-      endpoint += `&with_genres=${selectedGenre.join(',')}`; 
-    }
-    // ... (reste de la fonction fetchMovies inchangé) ...
-  };
-
   const toggleGenre = (id) => {
     let newGenres;
     if (selectedGenre.includes(id)) {
-      newGenres = selectedGenre.filter(g => g !== id); // On enlève
+      newGenres = selectedGenre.filter(g => g !== id);
     } else {
-      newGenres = [...selectedGenre, id]; // On ajoute
+      newGenres = [...selectedGenre, id];
     }
-    // On met à jour l'état local et on synchronise avec les autres joueurs
     setSelectedGenre(newGenres);
     syncSettings({ genre: newGenres });
   };
 
+  const fetchMovies = async () => {
+    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+    
+    if (selectedGenre.length > 0) {
+      endpoint += `&with_genres=${selectedGenre.join(',')}`; 
+    }
+    endpoint += `&watch_region=FR&primary_release_date.lte=${new Date().toISOString().split('T')[0]}`;
+    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+
+    if (selectedProviders.length > 0) {
+      endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
+      endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
+    } else {
+      endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
+    }
+
+    try {
+      const response = await axios.get(endpoint);
+      const newMovies = response.data.results; 
+      
+      if (newMovies.length === 0 && page < 500) {
+        setPage(prev => prev + 1);
+      } else {
+        setMovies(newMovies);
+        setCurrentIndex(0); 
+      }
+    } catch (error) {
+      console.error("Erreur API:", error);
+    }
+  };
 
   useEffect(() => {
     socket.on("player_count_update", (count) => setPlayerCount(count));
@@ -351,7 +354,6 @@ function App() {
         movieId: currentMovie.id, 
         movieTitle: currentMovie.title,
         moviePoster: currentMovie.poster_path,
-        // J'ajoute l'overview ici pour l'avoir si ça match tout de suite
         overview: currentMovie.overview,
         userId: userId
       });
@@ -389,7 +391,6 @@ function App() {
 
   // --- AFFICHAGE ---
 
-  // 1. GESTION DU MODAL (S'affiche par dessus tout si detailsMovie existe)
   const renderModal = () => {
     if (!detailsMovie) return null;
     return <MovieDetailModal movie={detailsMovie} onClose={() => setDetailsMovie(null)} />;
@@ -398,8 +399,7 @@ function App() {
   if (showMyMatches) {
     return (
       <div className="matches-screen">
-        {renderModal()} {/* IMPORTANT : Ajouter ceci pour afficher le popup si on clique */}
-        
+        {renderModal()} 
         <button className="btn-back" onClick={() => setShowMyMatches(false)}>Retour</button>
         <h2>Mes Matchs</h2>
         {savedMatches.length > 0 && (
@@ -410,7 +410,6 @@ function App() {
             <MatchItem 
               key={id} 
               movieId={id} 
-              // On passe la fonction pour ouvrir le modal
               onClick={(movie) => setDetailsMovie(movie)} 
             />
           ))}
@@ -419,7 +418,6 @@ function App() {
     );
   }
 
-  // 2. MODIFICATION ÉCRAN MATCH
   if (match) {
     return (
       <>
@@ -431,12 +429,11 @@ function App() {
               src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`} 
               alt={match.movieTitle} 
               className="match-poster clickable" 
-              // Au clic, on ouvre les détails. On passe un objet formaté pour que le modal comprenne.
               onClick={() => setDetailsMovie({ 
                 id: match.movieId, 
                 title: match.movieTitle, 
                 poster_path: match.moviePoster,
-                overview: match.overview // Si passé par le socket
+                overview: match.overview
               })}
             />
           )}
@@ -448,8 +445,44 @@ function App() {
     );
   }
 
-  // --- LOBBY (Reste inchangé) ---
+  // --- LOBBY ---
   if (isInRoom && !gameStarted) {
+    // ÉCRAN DE SÉLECTION DES GENRES (Page dédiée)
+    if (showGenreSelector) {
+      return (
+        <div className="welcome-screen">
+          <h2>Choisis tes styles</h2>
+          <p style={{color: '#888', marginBottom: '20px'}}>
+            {selectedGenre.length === 0 ? "Tous les genres" : `${selectedGenre.length} sélectionné(s)`}
+          </p>
+          
+          <div className="genre-grid-container">
+            {GENRES_LIST.map((genre) => {
+              const isActive = selectedGenre.includes(genre.id);
+              return (
+                <div 
+                  key={genre.id} 
+                  className={`genre-box ${isActive ? 'active' : ''}`}
+                  onClick={() => toggleGenre(genre.id)}
+                >
+                  {genre.name}
+                </div>
+              );
+            })}
+          </div>
+
+          <button 
+            className="unified-btn validate" 
+            style={{marginTop: '20px'}} 
+            onClick={() => setShowGenreSelector(false)}
+          >
+            Valider les genres
+          </button>
+        </div>
+      );
+    }
+
+    // ÉCRAN LOBBY NORMAL
     return (
       <div className="welcome-screen">
         <h1>Salle d'attente</h1>
@@ -516,84 +549,7 @@ function App() {
                 )}
 
                 <label>Genre & Qualité :</label>
-                <div className="filters-row">
-                if (showGenreSelector) {
-    return (
-      <div className="welcome-screen">
-        <h2>Choisis tes styles</h2>
-        <p style={{color: '#888', marginBottom: '20px'}}>
-          {selectedGenre.length === 0 ? "Tous les genres" : `${selectedGenre.length} sélectionné(s)`}
-        </p>
-        
-        <div className="genre-grid-container">
-          {GENRES_LIST.map((genre) => {
-            const isActive = selectedGenre.includes(genre.id);
-            return (
-              <div 
-                key={genre.id} 
-                className={`genre-box ${isActive ? 'active' : ''}`}
-                onClick={() => toggleGenre(genre.id)}
-              >
-                {genre.name}
-              </div>
-            );
-          })}
-        </div>
-
-        <button 
-          className="unified-btn validate" 
-          style={{marginTop: '20px'}} 
-          onClick={() => setShowGenreSelector(false)}
-        >
-          Valider les genres
-        </button>
-      </div>
-    );
-  }
-
-  // SINON (Affichage normal des paramètres)
-  return (
-      <div className="welcome-screen">
-        {/* ... (Code du Header Salle d'attente inchangé) ... */}
-
-        {isHost ? (
-          <>
-            {!showHostSettings ? (
-               // ... (Menu principal Hôte inchangé) ...
-               <div className="host-lobby-menu">
-                  {/* ... boutons existants ... */}
-                  <button className="unified-btn secondary" onClick={() => setShowHostSettings(true)}>
-                    Paramètres de la partie
-                  </button>
-                  <div style={{height: '15px'}}></div>
-                  <button className="unified-btn primary" onClick={startGame}>
-                    LANCER LA PARTIE
-                  </button>
-               </div>
-            ) : (
-              <div className="room-settings">
-                <h3>Paramètres</h3>
-                
-                {/* ... (Section Abonnements inchangée) ... */}
-                <label>Vos Abonnements :</label>
-                <div className="providers-select">
-                   {/* ... code providers existant ... */}
-                   {PLATFORMS.map(p => (
-                    <div 
-                      key={p.id} 
-                      className={`provider-chip ${selectedProviders.includes(p.id) ? 'selected' : ''}`}
-                      onClick={() => toggleProvider(p.id)}
-                    >
-                      <img src={p.logo} alt={p.name} />
-                    </div>
-                  ))}
-                </div>
-
-                {/* ... (Mode de vote inchangé) ... */}
-
-                <label>Genre & Qualité :</label>
                 <div className="filters-row-vertical">
-                  {/* BOUTON QUI OUVRE LA PAGE DES GENRES */}
                   <button 
                     className="unified-btn secondary" 
                     onClick={() => setShowGenreSelector(true)}
@@ -663,101 +619,8 @@ function App() {
   if (currentIndex >= movies.length) return <div className="welcome-screen"><h2>Chargement...</h2></div>;
   const movie = movies[currentIndex];
 
-  // ... (Début du fichier inchangé)
-
-// 1. VERSION AMÉLIORÉE DU MODAL (AVEC ACTEURS ET VIDEO)
-const MovieDetailModal = ({ movie, onClose }) => {
-  const [fullDetails, setFullDetails] = useState(null);
-
-  useEffect(() => {
-    // On demande : le film + les credits (acteurs) + les vidéos (trailers)
-    axios.get(`https://api.themoviedb.org/3/movie/${movie.id}?api_key=${API_KEY}&language=fr-FR&append_to_response=credits,videos`)
-      .then(res => setFullDetails(res.data))
-      .catch(err => console.error(err));
-  }, [movie.id]);
-
-  if (!fullDetails) return <div className="modal-overlay">Chargement...</div>;
-
-  const title = fullDetails.title;
-  const posterSrc = fullDetails.poster_path ? `https://image.tmdb.org/t/p/w500${fullDetails.poster_path}` : "";
-  
-  // Logique pour trouver le trailer YouTube
-  const trailer = fullDetails.videos?.results?.find(
-    vid => vid.site === "YouTube" && (vid.type === "Trailer" || vid.type === "Teaser")
-  );
-
-  // Les 5 premiers acteurs
-  const cast = fullDetails.credits?.cast?.slice(0, 5) || [];
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <motion.div 
-        className="modal-content" 
-        onClick={(e) => e.stopPropagation()}
-        initial={{ y: 100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-      >
-        <button className="close-modal" onClick={onClose}>✕</button>
-        
-        <div className="modal-scroll">
-          {/* BANDE ANNONCE (si dispo) ou IMAGE */}
-          {trailer ? (
-            <div className="video-container">
-              <iframe
-                src={`https://www.youtube.com/embed/${trailer.key}`}
-                title="Trailer"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
-            </div>
-          ) : (
-            <img src={posterSrc} alt={title} className="modal-poster" />
-          )}
-
-          <div className="modal-text">
-            <h2>{title}</h2>
-            
-            <div className="meta-tags">
-               {fullDetails.release_date && <span className="tag">{fullDetails.release_date.split('-')[0]}</span>}
-               {fullDetails.runtime && <span className="tag">{fullDetails.runtime} min</span>}
-               <span className="tag star">★ {fullDetails.vote_average?.toFixed(1)}</span>
-            </div>
-
-            <p className="modal-overview">{fullDetails.overview || "Pas de description."}</p>
-
-            {/* SECTION ACTEURS */}
-            {cast.length > 0 && (
-              <div className="cast-section">
-                <h3>Casting</h3>
-                <div className="cast-list">
-                  {cast.map(actor => (
-                    <div key={actor.id} className="actor-item">
-                      <img 
-                        src={actor.profile_path 
-                          ? `https://image.tmdb.org/t/p/w200${actor.profile_path}` 
-                          : "https://via.placeholder.com/100x150?text=?"} 
-                        alt={actor.name} 
-                      />
-                      <span>{actor.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-
-// ... (Le reste du code jusqu'au return final de App) ...
-
-  // 2. CORRECTION DU RENDU FINAL (Déplacer renderModal)
   return (
     <>
-      {/* LE MODAL DOIT ÊTRE ICI, À L'EXTÉRIEUR DU CONTAINER */}
       {renderModal()} 
 
       <div className="card-container">
@@ -793,4 +656,5 @@ const MovieDetailModal = ({ movie, onClose }) => {
     </>
   );
 }
+
 export default App;
