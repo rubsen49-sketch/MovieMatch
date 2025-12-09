@@ -486,7 +486,31 @@ function App() {
 
 
   const handleAddFriend = async (targetUsername) => {
-    // ...
+    if (!user) return alert("Connectez-vous pour ajouter des amis !");
+
+    try {
+      const { data: profiles, error: pError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('username', targetUsername)
+        .single();
+
+      if (pError || !profiles) return alert("Utilisateur introuvable.");
+
+      const { error: fError } = await supabase
+        .from('friendships')
+        .insert({ user_id: user.id, friend_id: profiles.id });
+
+      if (fError) {
+        if (fError.code === '23505') alert("Déjà demandé ou amis !");
+        else throw fError;
+      } else {
+        alert(`Demande envoyée à ${targetUsername} !`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Erreur lors de l'ajout.");
+    }
   };
 
   const handleInviteFriend = (friendProfile) => {
@@ -500,36 +524,6 @@ function App() {
   };
 
   // --- RENDER ---
-  if (!user) return alert("Connectez-vous pour ajouter des amis !");
-
-  try {
-    const { data: profiles, error: pError } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('username', targetUsername)
-      .single();
-
-    if (pError || !profiles) return alert("Utilisateur introuvable.");
-
-    const { error: fError } = await supabase
-      .from('friendships')
-      .insert({ user_id: user.id, friend_id: profiles.id });
-
-    if (fError) {
-      if (fError.code === '23505') alert("Déjà demandé ou amis !");
-      else throw fError;
-    } else {
-      alert(`Demande envoyée à ${targetUsername} !`);
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Erreur lors de l'ajout.");
-  }
-};
-
-// --- RENDER ---
-
-const renderModal = () => {
 
   const renderModal = () => {
     if (!detailsMovie) return null;
