@@ -42,7 +42,7 @@ const Lobby = ({
 	// SHARED SETTINGS PANEL (Used in Desktop Right col & Mobile Modal)
 	const SettingsPanel = () => (
 		<div className="room-settings">
-			<h3 style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 15, marginBottom: 20 }}>
+			<h3 className="settings-title">
 				Paramètres de la partie
 			</h3>
 

@@ -76,20 +76,20 @@ const SwipeDeck = ({
 
 				{/* RIGHT: DETAILS & ACTIONS (Desktop Only - visible via flex/grid) */}
 				<div className="swipe-info-side mobile-hidden">
-					<div className="providers-list" style={{ display: 'flex', gap: 10 }}>
+					<div className="providers-list">
 						{providersDisplay.map((p) => (
-							<img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} style={{ width: 40, borderRadius: 8 }} alt="prov" />
+							<img key={p.provider_id} src={`https://image.tmdb.org/t/p/original${p.logo_path}`} className="provider-logo-small" alt="prov" />
 						))}
 					</div>
 
 					<h1 className="desktop-movie-title">{movie.title}</h1>
 
 					<div className="desktop-meta-row">
-						<span style={{ color: 'var(--primary)', fontWeight: 'bold' }}>{movie.release_date?.split('-')[0]}</span>
+						<span className="text-primary-bold">{movie.release_date?.split('-')[0]}</span>
 						<span>•</span>
 						<span>{movie.vote_average?.toFixed(1)} / 10</span>
 						<span>•</span>
-						<span style={{ fontSize: '1rem' }}>{movie.original_language?.toUpperCase()}</span>
+						<span className="text-lg">{movie.original_language?.toUpperCase()}</span>
 					</div>
 
 					<p className="desktop-overview">
@@ -103,24 +103,24 @@ const SwipeDeck = ({
 						</div>
 						<div className="action-hint" onClick={() => handleSwipe("left")}>
 							<span className="kbd-key">← GAUCHE</span>
-							<span style={{ color: 'var(--red)' }}>Passer</span>
+							<span className="text-red">Passer</span>
 						</div>
 						<div className="action-hint" onClick={() => handleSwipe("right")}>
 							<span className="kbd-key">DROITE →</span>
-							<span style={{ color: 'var(--gold)' }}>Liker</span>
+							<span className="text-gold">Liker</span>
 						</div>
 					</div>
 				</div>
 
 				{/* MOBILE ACTIONS (Floating at bottom, visible only mobile via CSS) */}
 				<div className="actions desktop-hidden">
-					<button className="btn-circle btn-undo" onClick={handleUndo} style={{ background: '#333', fontSize: '1.2rem', width: 50, height: 50 }}>↩️</button>
+					<button className="btn-circle btn-undo btn-undo-mobile" onClick={handleUndo}>↩️</button>
 					<button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
 					<button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
 				</div>
 			</div>
 
-			<button className="btn-quit" onClick={leaveRoom} style={{ position: 'absolute', top: 20, right: 20, zIndex: 100 }}>✕ Quitter</button>
+			<button className="btn-quit-absolute" onClick={leaveRoom}>✕ Quitter</button>
 
 
 

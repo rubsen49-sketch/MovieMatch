@@ -1440,6 +1440,7 @@ select:focus {
 }
 
 /* Date Range Inputs */
+/* Date Range Inputs */
 .input-year-group {
   display: flex;
   align-items: center;
@@ -1449,22 +1450,31 @@ select:focus {
 }
 
 .input-year {
-  background: rgba(0, 0, 0, 0.3) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: var(--gold) !important;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--gold);
   font-size: 1.2rem;
   font-weight: bold;
   text-align: center;
-  width: 100px !important;
-  padding: 10px !important;
-  border-radius: 12px !important;
+  width: 100px;
+  padding: 10px;
+  border-radius: 12px;
   transition: all 0.2s;
 }
 
 .input-year:focus {
-  border-color: var(--gold) !important;
+  border-color: var(--gold);
   box-shadow: 0 0 15px rgba(255, 179, 0, 0.2);
   transform: scale(1.05);
+}
+
+/* Settings Title (Extracted from Lobby) */
+.settings-title {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  color: white;
 }
 
 /* Genre Box Grid */
