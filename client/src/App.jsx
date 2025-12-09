@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import io from 'socket.io-client';
 import axios from 'axios';
+import { useGameSocket } from './hooks/useGameSocket';
 import './App.css';
 import { Analytics } from "@vercel/analytics/react";
+import toast, { Toaster } from 'react-hot-toast';
 
 // Components
 import MovieDetailModal from './components/MovieDetailModal';
@@ -19,11 +20,6 @@ import { syncUserProfile, syncLibraryWithCloud, saveToCloud } from './services/s
 // Constants
 import { GENRES_LIST } from './constants';
 
-const SOCKET_URL = import.meta.env.MODE === 'development'
-  ? "http://localhost:3001"
-  : "https://moviematch-backend-0om3.onrender.com";
-
-const socket = io.connect(SOCKET_URL);
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const getUserId = () => {
@@ -36,28 +32,15 @@ const getUserId = () => {
 };
 
 function App() {
-  const [room, setRoom] = useState("");
-  const [isInRoom, setIsInRoom] = useState(false);
-  const [gameStarted, setGameStarted] = useState(false);
   const [movies, setMovies] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [match, setMatch] = useState(null);
   const [page, setPage] = useState(1);
   const [view, setView] = useState("menu");
-
-
-  // Settings State
-  const [selectedGenre, setSelectedGenre] = useState([]);
   const [showGenreSelector, setShowGenreSelector] = useState(false);
-  const [minRating, setMinRating] = useState(0);
-  const [selectedProviders, setSelectedProviders] = useState([]);
-  const [voteMode, setVoteMode] = useState('majority');
-
   const [providersDisplay, setProvidersDisplay] = useState([]);
-  const [isHost, setIsHost] = useState(false);
-  const [playerCount, setPlayerCount] = useState(0);
-  const [players, setPlayers] = useState([]); // List of { id, username }
+
   const userId = useRef(getUserId()).current;
+
   const [savedMatches, setSavedMatches] = useState(() => {
     const saved = localStorage.getItem('myMatches');
     if (!saved) return [];
@@ -116,11 +99,44 @@ function App() {
 
 
 
-  useEffect(() => {
-    if (user) {
-      socket.emit('register_user', user.id);
+  // --- SOCKET HOOK ---
+
+  const onMatchFoundCB = (data) => {
+    const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
+    const exists = currentMatches.some(m => m.id === data.movieId);
+
+    if (!exists) {
+      const newMatch = {
+        id: data.movieId,
+        status: 'to_watch',
+        addedAt: new Date().toISOString()
+      };
+      const newMatches = [newMatch, ...currentMatches];
+      localStorage.setItem('myMatches', JSON.stringify(newMatches));
+      setSavedMatches(newMatches);
+      saveToCloud(userRef.current, newMatches);
     }
-  }, [user]);
+  };
+
+  const {
+    room, setRoom,
+    isInRoom,
+    isHost,
+    gameStarted, setGameStarted,
+    match, setMatch,
+    playerCount,
+    players,
+    settings,
+    updateSettings,
+    createRoom,
+    joinRoom, // We use this for manual joins
+    startGame,
+    leaveRoom,
+    swipe,
+    inviteFriend
+  } = useGameSocket(user, onMatchFoundCB);
+
+  const { genre: selectedGenre, rating: minRating, providers: selectedProviders, voteMode } = settings;
 
   // --- ACTIONS BIBLIOTHÈQUE ---
   const updateMovieStatus = (movieId, newStatus) => {
@@ -141,438 +157,266 @@ function App() {
     saveToCloud(user, updated);
   };
 
-  const removeMovie = (movieId) => {
-    if (confirm("Supprimer ce film de la liste ?")) {
-      const updated = savedMatches.filter(m => m.id !== movieId);
-      setSavedMatches(updated);
-      localStorage.setItem('myMatches', JSON.stringify(updated));
-      saveToCloud(user, updated);
-    }
-  };
+  /* Removed removeMovie confirm logic for later UI improvement or kept as is, but replacing native alert/confirm */
+  // NOTE: Native 'confirm' is blocking and reliable for deletes. keeping it distinct from 'toasts'.
 
-  const bulkRemoveMovies = (movieIds) => {
-    if (confirm(`Supprimer ces ${movieIds.length} films ?`)) {
-      const updated = savedMatches.filter(m => !movieIds.includes(m.id));
-      setSavedMatches(updated);
-      localStorage.setItem('myMatches', JSON.stringify(updated));
-      saveToCloud(user, updated);
-    }
-  };
+  // Replace alerts in sockets/actions:
 
-  // --- SOCKET & GAME LOGIC ---
+  if (confirm("Supprimer ce film de la liste ?")) {
+    const updated = savedMatches.filter(m => m.id !== movieId);
+    setSavedMatches(updated);
+    localStorage.setItem('myMatches', JSON.stringify(updated));
+    saveToCloud(user, updated);
+  }
+};
 
-  const joinLobby = (roomCodeToJoin = null) => {
-    const targetRoom = roomCodeToJoin || room;
-    const currentUsername = user ? (user.user_metadata?.username || 'Utilisateur') : 'Invité';
+const bulkRemoveMovies = (movieIds) => {
+  if (confirm(`Supprimer ces ${movieIds.length} films ?`)) {
+    const updated = savedMatches.filter(m => !movieIds.includes(m.id));
+    setSavedMatches(updated);
+    localStorage.setItem('myMatches', JSON.stringify(updated));
+    saveToCloud(user, updated);
+  }
+};
 
-    if (targetRoom !== "") {
-      console.log("Joing/Creating room:", targetRoom);
-      const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const randomPage = (seed % 30) + 1;
-      setPage(randomPage);
+// --- SOCKET & GAME LOGIC ---
 
-      if (isHost || roomCodeToJoin) {
-        console.log("Emitting create_room...", { room: targetRoom, username: currentUsername });
-        socket.emit("create_room", { room: targetRoom, username: currentUsername });
-        if (user) {
-          syncUserProfile(user);
-          syncLibraryWithCloud(user).then(merged => {
-            setSavedMatches(merged);
-            localStorage.setItem('myMatches', JSON.stringify(merged));
-          });
-        }
-        setIsInRoom(true);
-        setGameStarted(false);
-        setView("lobby");
-      } else {
-        socket.emit("join_room", { room: targetRoom, username: currentUsername }, (response) => {
-          if (response.status === "ok") {
-            setIsInRoom(true);
-            setGameStarted(false);
-            setView("lobby");
-          } else {
-            alert("Erreur de salle.");
-          }
-        });
-      }
-    }
-  };
+// --- SOCKET & GAME LOGIC Replaced by Hook ---
 
-  const generateRoomCode = () => {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let result = "";
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setRoom(result);
-    setIsHost(true);
-    joinLobby(result);
-  };
+// Wrapper for WelcomeScreen to use hook's joinRoom cleanly
+const joinLobby = (roomCodeToJoin = null) => {
+  if (roomCodeToJoin) {
+    // Explicit join/create logic handled inside hook if we called createRoom?
+    // Wait, App.jsx joinLobby was mixing create vs join.
+    // The hook has createRoom and joinRoom.
+    // If we generate code -> createRoom.
+    // If we type code -> joinRoom.
+    joinRoom(roomCodeToJoin);
+  } else if (room) {
+    joinRoom(room);
+  }
+};
 
-  const syncSettings = (updates) => {
-    const newSettings = {
-      genre: selectedGenre,
-      rating: minRating,
-      providers: selectedProviders,
-      voteMode: voteMode,
-      ...updates
-    };
+const generateRoomCode = () => {
+  createRoom();
+  // createRoom in hook handles updating `room` state and emitting events.
+  // However, createRoom generates its own code internally in the hook version I wrote.
+  // So we just call it. But wait, `createRoom` in hook sets the room state.
+  // Does it switch view to lobby? hook updates `isInRoom`. 
+  // App.jsx effect observes `isInRoom`.
+  setView("lobby"); // Safe to set view here?
+};
 
-    if (updates.genre !== undefined) setSelectedGenre(updates.genre);
-    if (updates.rating !== undefined) setMinRating(updates.rating);
-    if (updates.providers !== undefined) setSelectedProviders(updates.providers);
-    if (updates.voteMode !== undefined) setVoteMode(updates.voteMode);
+const handleSwipe = (direction) => {
+  const currentMovie = movies[currentIndex];
+  swipe(direction, currentMovie, userId);
+  setCurrentIndex((prev) => prev + 1);
+};
 
-    socket.emit("update_settings", {
-      room: room,
-      settings: newSettings
-    });
-  };
+const toggleGenre = (id) => {
+  let newGenres;
+  if (selectedGenre.includes(id)) {
+    newGenres = selectedGenre.filter(g => g !== id);
+  } else {
+    newGenres = [...selectedGenre, id];
+  }
+  updateSettings({ genre: newGenres });
+};
 
-  const toggleGenre = (id) => {
-    let newGenres;
-    if (selectedGenre.includes(id)) {
-      newGenres = selectedGenre.filter(g => g !== id);
-    } else {
-      newGenres = [...selectedGenre, id];
-    }
-    syncSettings({ genre: newGenres });
-  };
+// Side effect to update view when entering room
+useEffect(() => {
+  if (isInRoom) setView("lobby");
+}, [isInRoom]);
 
-  const fetchMovies = async () => {
-    if (!API_KEY) {
-      console.error("API Key missing");
-      return;
-    }
-    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+// Clean up socket listeners is handled by hook.  
 
-    if (selectedGenre.length > 0) {
-      endpoint += `&with_genres=${selectedGenre.join(',')}`;
-    }
-    endpoint += `&watch_region=FR&primary_release_date.lte=${new Date().toISOString().split('T')[0]}`;
-    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
 
-    if (selectedProviders.length > 0) {
-      endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
-      endpoint += `&watch_region=FR&with_watch_monetization_types=flatrate`;
-    } else {
-      endpoint += `&with_watch_monetization_types=flatrate|rent|buy`;
-    }
+useEffect(() => {
+  if (gameStarted) fetchMovies();
+}, [page, gameStarted]);
 
-    try {
-      const response = await axios.get(endpoint);
-      const newMovies = response.data.results;
+useEffect(() => {
+  if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
+    setPage(prev => prev + 1);
+  }
+}, [currentIndex, movies.length, gameStarted]);
 
-      if (newMovies.length === 0 && page < 500) {
-        setPage(prev => prev + 1);
-      } else {
-        setMovies(newMovies);
-        setCurrentIndex(0);
-      }
-    } catch (error) {
-      console.error("Erreur API:", error);
-    }
-  };
 
-  useEffect(() => {
-    socket.on("player_count_update", (count) => setPlayerCount(count));
-    socket.on("player_list_update", (list) => setPlayers(list));
-    socket.on("settings_update", (settings) => {
-      if (settings.genre !== undefined) setSelectedGenre(settings.genre);
-      if (settings.rating !== undefined) setMinRating(settings.rating);
-      if (settings.providers !== undefined) setSelectedProviders(settings.providers);
-      if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
-    });
 
-    socket.on('invitation_received', ({ roomCode, inviterName }) => {
-      if (confirm(`${inviterName} vous invite à rejoindre le salon ${roomCode}. Accepter ? 🎯`)) {
-        setRoom(roomCode);
-        // We need to ensure we leave current room if any? joinLobby handles it?
-        // joinLobby checks if roomCodeToJoin is provided.
-        // But we can't call joinLobby easily if it's not defined inside useEffect or we need to useCallback.
-        // joinLobby IS defined in component scope.
-        // But this effect runs on mount. `joinLobby` changes? No, functions are recreated.
-        // Ideally, we shouldn't use closure variables in [] effect.
-        // But `joinLobby` depends on state?
-        // Let's use a ref or just `window.location.reload` with param?
-        // Or easier: set a "pendingInvitation" state and handle it?
-        // Or just call it, ignoring stale closure if joinLobby is stable enough or we don't care about stale props (it uses `room` state but we pass arg).
-        // Actually, `socket` is outside.
-        // Let's just emit join directly or trigger a UI state.
+const resetMyMatches = () => {
+  if (confirm("Vider l'historique ?")) {
+    localStorage.removeItem('myMatches');
+    setSavedMatches([]);
+    toast.success("Historique vidé");
+  }
+};
 
-        // Cleanest: Trigger a state change that `useEffect` picks up, or just Force Join.
-        // Since this is a quick implementation:
-        socket.emit("join_room", { room: roomCode, username: user ? (user.user_metadata?.username || 'Invité') : 'Invité' }, (response) => {
-          if (response.status === "ok") {
-            setIsInRoom(true);
-            setGameStarted(false);
-            setView("lobby");
-            setRoom(roomCode); // Update UI
-          }
-        });
-      }
-    });
-
-    socket.on("game_started", () => setGameStarted(true));
-    socket.on("match_found", (data) => {
-      setMatch(data);
-      const currentMatches = JSON.parse(localStorage.getItem('myMatches')) || [];
-
-      // Check if already exists (check by ID)
-      const exists = currentMatches.some(m => m.id === data.movieId);
-
-      if (!exists) {
-        const newMatch = {
-          id: data.movieId,
-          status: 'to_watch',
-          addedAt: new Date().toISOString()
-        };
-        const newMatches = [newMatch, ...currentMatches];
-        localStorage.setItem('myMatches', JSON.stringify(newMatches));
-        setSavedMatches(newMatches);
-        saveToCloud(userRef.current, newMatches);
-      }
-    });
-
-    socket.on("you_are_host", () => {
-      setIsHost(true);
-      alert("L'hôte a quitté. Vous êtes le nouvel hôte ! 👑");
-    });
-
-    socket.on("host_update", (newHostId) => {
-      // Just in case we need to know who the new host is, though "you_are_host" handles the permission
-      if (socket.id === newHostId) setIsHost(true);
-    });
-
-    return () => {
-      socket.off("player_count_update");
-      socket.off("settings_update");
-      socket.off("game_started");
-      socket.off("match_found");
-      socket.off("you_are_host");
-      socket.off("host_update");
-    };
-  }, []);
-
-  useEffect(() => {
-    if (gameStarted) fetchMovies();
-  }, [page, gameStarted]);
-
-  useEffect(() => {
-    if (gameStarted && movies.length > 0 && currentIndex >= movies.length) {
-      setPage(prev => prev + 1);
-    }
-  }, [currentIndex, movies.length, gameStarted]);
-
-  const startGame = () => socket.emit("start_game", room);
-
-  const leaveRoom = () => {
-    setIsInRoom(false);
-    setGameStarted(false);
-    setMovies([]);
-    setCurrentIndex(0);
-    setPage(1);
-    setRoom("");
-    setView("menu");
-    setIsHost(false);
-    window.location.reload();
-  };
-
-  const shareCode = async () => {
-    if (navigator.share) {
-      await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
-    } else {
-      await navigator.clipboard.writeText(room);
-      alert("Code copié !");
-    }
-  };
-
-  const handleSwipe = (direction) => {
+useEffect(() => {
+  if (movies.length > 0 && currentIndex < movies.length) {
     const currentMovie = movies[currentIndex];
-    if (direction === "right") {
-      socket.emit("swipe_right", {
-        room,
-        movieId: currentMovie.id,
-        movieTitle: currentMovie.title,
-        moviePoster: currentMovie.poster_path,
-        overview: currentMovie.overview,
-        userId: userId
-      });
+    // Only fetch providers if API key is present
+    if (API_KEY) {
+      axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
+        .then(response => {
+          const frData = response.data.results.FR;
+          setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
+        })
+        .catch(err => console.error(err));
     }
-    setCurrentIndex((prev) => prev + 1);
-  };
+  }
+}, [currentIndex, movies]);
 
-  const resetMyMatches = () => {
-    if (confirm("Vider l'historique ?")) {
-      localStorage.removeItem('myMatches');
-      setSavedMatches([]);
+
+const handleAddFriend = async (targetUsername) => {
+  if (!user) return toast.error("Connectez-vous !");
+
+  try {
+    const { data: profiles, error: pError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', targetUsername)
+      .single();
+
+    if (pError || !profiles) return toast.error("Utilisateur introuvable.");
+
+    const { error: fError } = await supabase
+      .from('friendships')
+      .insert({ user_id: user.id, friend_id: profiles.id });
+
+    if (fError) {
+      if (fError.code === '23505') toast("Déjà demandé ou amis !");
+      else throw fError;
+    } else {
+      toast.success(`Demande envoyée à ${targetUsername} !`);
     }
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'ajout.");
+  }
+};
 
-  useEffect(() => {
-    if (movies.length > 0 && currentIndex < movies.length) {
-      const currentMovie = movies[currentIndex];
-      // Only fetch providers if API key is present
-      if (API_KEY) {
-        axios.get(`https://api.themoviedb.org/3/movie/${currentMovie.id}/watch/providers?api_key=${API_KEY}`)
-          .then(response => {
-            const frData = response.data.results.FR;
-            setProvidersDisplay(frData && frData.flatrate ? frData.flatrate : []);
-          })
-          .catch(err => console.error(err));
-      }
-    }
-  }, [currentIndex, movies]);
+const handleInviteFriend = (friendProfile) => {
+  inviteFriend(friendProfile);
+};
 
+// --- RENDER ---
 
-  const handleAddFriend = async (targetUsername) => {
-    if (!user) return alert("Connectez-vous pour ajouter des amis !");
+const renderModal = () => {
+  if (!detailsMovie) return null;
 
-    try {
-      const { data: profiles, error: pError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', targetUsername)
-        .single();
-
-      if (pError || !profiles) return alert("Utilisateur introuvable.");
-
-      const { error: fError } = await supabase
-        .from('friendships')
-        .insert({ user_id: user.id, friend_id: profiles.id });
-
-      if (fError) {
-        if (fError.code === '23505') alert("Déjà demandé ou amis !");
-        else throw fError;
-      } else {
-        alert(`Demande envoyée à ${targetUsername} !`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de l'ajout.");
-    }
-  };
-
-  const handleInviteFriend = (friendProfile) => {
-    if (!room) return;
-    socket.emit('invite_friend', {
-      friendId: friendProfile.id,
-      roomCode: room,
-      inviterName: user?.user_metadata?.username || 'Un ami'
-    });
-    alert(`Invitation envoyée à ${friendProfile.username} !`);
-  };
-
-  // --- RENDER ---
-
-  const renderModal = () => {
-    if (!detailsMovie) return null;
-
-    const libraryItem = savedMatches.find(m => m.id === detailsMovie.id);
-    // Handle legacy number format (assume 'to_watch') or object format
-    const currentStatus = libraryItem ? (typeof libraryItem === 'number' ? 'to_watch' : libraryItem.status) : null;
-
-    return (
-      <MovieDetailModal
-        movie={detailsMovie}
-        onClose={() => setDetailsMovie(null)}
-        currentStatus={currentStatus}
-        onUpdateStatus={updateMovieStatus}
-      />
-    );
-  };
+  const libraryItem = savedMatches.find(m => m.id === detailsMovie.id);
+  // Handle legacy number format (assume 'to_watch') or object format
+  const currentStatus = libraryItem ? (typeof libraryItem === 'number' ? 'to_watch' : libraryItem.status) : null;
 
   return (
-    <>
-      {renderModal()}
+    <MovieDetailModal
+      movie={detailsMovie}
+      onClose={() => setDetailsMovie(null)}
+      currentStatus={currentStatus}
+      onUpdateStatus={updateMovieStatus}
+    />
+  );
+};
 
-      {match ? (
-        <div className="match-overlay">
-          <h1 className="match-title">IT'S A MATCH!</h1>
-          {match.moviePoster && (
-            <img
-              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
-              alt={match.movieTitle}
-              className="match-poster clickable"
-              onClick={() => setDetailsMovie({
-                id: match.movieId,
-                title: match.movieTitle,
-                poster_path: match.moviePoster,
-                overview: match.overview
-              })}
-            />
-          )}
-          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
-          <h2>{match.movieTitle}</h2>
-          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
-        </div>
-      ) : isInRoom && !gameStarted ? (
-        showGenreSelector ? (
-          <GenreSelector
-            selectedGenre={selectedGenre}
-            toggleGenre={toggleGenre}
-            onValidate={() => setShowGenreSelector(false)}
+return (
+  <>
+    <Toaster position="top-center" toastOptions={{ style: { background: '#333', color: '#fff' } }} />
+    {renderModal()}
+
+    {match ? (
+      <div className="match-overlay">
+        <h1 className="match-title">IT'S A MATCH!</h1>
+        {match.moviePoster && (
+          <img
+            src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
+            alt={match.movieTitle}
+            className="match-poster clickable"
+            onClick={() => setDetailsMovie({
+              id: match.movieId,
+              title: match.movieTitle,
+              poster_path: match.moviePoster,
+              overview: match.overview
+            })}
           />
-        ) : (
-          <Lobby
-            room={room}
-            playerCount={playerCount}
-            players={players}
-            currentUser={user}
-            isHost={isHost}
-            onAddFriend={handleAddFriend}
-            settings={{
-              providers: selectedProviders,
-              voteMode: voteMode,
-              rating: minRating,
-              genre: selectedGenre
-            }}
-            updateSettings={syncSettings}
-            startGame={startGame}
-            leaveRoom={leaveRoom}
-            shareCode={shareCode}
-            onOpenGenreSelector={() => setShowGenreSelector(true)}
-          />
-        )
-      ) : !isInRoom ? (
-        <WelcomeScreen
-          user={user}
-          view={view}
-          setView={setView}
-          room={room}
-          setRoom={setRoom}
-          generateRoomCode={generateRoomCode}
-          joinLobby={joinLobby}
-          showAuthModal={showAuthModal}
-          setShowAuthModal={setShowAuthModal}
-          showFriends={showFriends}
-          setShowFriends={setShowFriends}
-          showMyMatches={showMyMatches}
-          setShowMyMatches={setShowMyMatches}
-          savedMatches={savedMatches}
-          resetMyMatches={resetMyMatches}
-          setDetailsMovie={setDetailsMovie}
-          updateMovieStatus={updateMovieStatus}
-          removeMovie={removeMovie}
-          bulkUpdateMovieStatus={bulkUpdateMovieStatus}
-          bulkRemoveMovies={bulkRemoveMovies}
-          friendLibraryTarget={friendLibraryTarget}
-          setFriendLibraryTarget={setFriendLibraryTarget}
-          handleInviteFriend={handleInviteFriend}
-          isInRoom={isInRoom}
+        )}
+        <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+        <h2>{match.movieTitle}</h2>
+        <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
+      </div>
+    ) : isInRoom && !gameStarted ? (
+      showGenreSelector ? (
+        <GenreSelector
+          selectedGenre={selectedGenre}
+          toggleGenre={toggleGenre}
+          onValidate={() => setShowGenreSelector(false)}
         />
       ) : (
-        <SwipeDeck
-          movies={movies}
-          currentIndex={currentIndex}
-          handleSwipe={handleSwipe}
-          setDetailsMovie={setDetailsMovie}
+        <Lobby
+          room={room}
+          playerCount={playerCount}
+          players={players}
+          currentUser={user}
+          isHost={isHost}
+          onAddFriend={handleAddFriend}
+          settings={{
+            providers: selectedProviders,
+            voteMode: voteMode,
+            rating: minRating,
+            genre: selectedGenre
+          }}
+          updateSettings={updateSettings}
+          startGame={startGame}
           leaveRoom={leaveRoom}
-          providersDisplay={providersDisplay}
+          shareCode={async () => {
+            if (navigator.share) {
+              await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
+            } else {
+              await navigator.clipboard.writeText(room);
+              alert("Code copié !");
+            }
+          }}
+          onOpenGenreSelector={() => setShowGenreSelector(true)}
         />
-      )}
-    </>
-  );
+      )
+    ) : !isInRoom ? (
+      <WelcomeScreen
+        user={user}
+        view={view}
+        setView={setView}
+        room={room}
+        setRoom={setRoom}
+        generateRoomCode={generateRoomCode}
+        joinLobby={joinLobby}
+        showAuthModal={showAuthModal}
+        setShowAuthModal={setShowAuthModal}
+        showFriends={showFriends}
+        setShowFriends={setShowFriends}
+        showMyMatches={showMyMatches}
+        setShowMyMatches={setShowMyMatches}
+        savedMatches={savedMatches}
+        resetMyMatches={resetMyMatches}
+        setDetailsMovie={setDetailsMovie}
+        updateMovieStatus={updateMovieStatus}
+        removeMovie={removeMovie}
+        bulkUpdateMovieStatus={bulkUpdateMovieStatus}
+        bulkRemoveMovies={bulkRemoveMovies}
+        friendLibraryTarget={friendLibraryTarget}
+        setFriendLibraryTarget={setFriendLibraryTarget}
+        handleInviteFriend={handleInviteFriend}
+        isInRoom={isInRoom}
+      />
+    ) : (
+      <SwipeDeck
+        movies={movies}
+        currentIndex={currentIndex}
+        handleSwipe={handleSwipe}
+        setDetailsMovie={setDetailsMovie}
+        leaveRoom={leaveRoom}
+        providersDisplay={providersDisplay}
+      />
+    )}
+  </>
+);
 }
 
 export default App;

@@ -1,161 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient';
+import React, { useState } from 'react';
+import { useFriends } from '../hooks/useFriends';
 
 const FriendsView = ({ onClose, currentUser, onViewLibrary, onInvite, isInRoom }) => {
 	const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'requests'
-	const [friends, setFriends] = useState([]);
-	const [incomingRequests, setIncomingRequests] = useState([]); // Requests sent TO me
-	const [outgoingRequests, setOutgoingRequests] = useState([]); // Requests I sent
-	const [searchResults, setSearchResults] = useState([]);
-	const [searchQuery, setSearchQuery] = useState('');
-	const [loading, setLoading] = useState(false);
-	const [message, setMessage] = useState('');
 
-	useEffect(() => {
-		fetchAllRelationships();
-	}, [currentUser]);
-
-	const fetchAllRelationships = async () => {
-		try {
-			// Fetch ALL friendships where I am involved
-			const { data, error } = await supabase
-				.from('friendships')
-				.select(`
-          id, 
-          status,
-          user_id,
-          friend_id,
-          friend:friend_id(username, id),
-          user:user_id(username, id)
-        `)
-				.or(`user_id.eq.${currentUser.id},friend_id.eq.${currentUser.id}`);
-
-			if (error) throw error;
-
-			const uniqueFriends = new Map();
-
-			data.forEach(rel => {
-				if (rel.status === 'accepted') {
-					const isMeRequester = rel.user_id === currentUser.id;
-					const friendProfile = isMeRequester ? rel.friend : rel.user;
-					// Deduplicate based on ID
-					if (!uniqueFriends.has(friendProfile.id)) {
-						uniqueFriends.set(friendProfile.id, { ...friendProfile, friendship_id: rel.id });
-					}
-				} else if (rel.status === 'pending') {
-					if (rel.friend_id === currentUser.id) {
-						incoming.push({ ...rel, other: rel.user });
-					} else {
-						outgoing.push({ ...rel, other: rel.friend });
-					}
-				}
-			});
-
-			setFriends(Array.from(uniqueFriends.values()));
-			setIncomingRequests(incoming);
-			setOutgoingRequests(outgoing);
-
-		} catch (err) {
-			console.error("Error fetching relationships:", err);
-		}
-	};
-
-	const removeFriend = async (friendshipId, friendName) => {
-		if (!confirm(`Supprimer ${friendName} de vos amis ?`)) return;
-
-		try {
-			const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
-			if (error) throw error;
-			fetchAllRelationships();
-		} catch (err) {
-			console.error(err);
-			setMessage("Erreur lors de la suppression");
-		}
-	};
+	const {
+		friends,
+		incomingRequests,
+		outgoingRequests,
+		searchResults,
+		loading,
+		searchQuery,
+		setSearchQuery,
+		getRelationshipStatus,
+		removeFriend,
+		sendRequest,
+		handleRequest
+	} = useFriends(currentUser);
 
 
-	// Debounced Search
-	useEffect(() => {
-		const delayDebounceFn = setTimeout(() => {
-			if (searchQuery.trim()) {
-				searchUsers();
-			} else {
-				setSearchResults([]);
-			}
-		}, 500);
 
-		return () => clearTimeout(delayDebounceFn);
-	}, [searchQuery]);
 
-	const searchUsers = async (e) => {
-		if (e) e.preventDefault();
-		if (!searchQuery.trim()) return;
-
-		setLoading(true);
-
-		try {
-			const { data, error } = await supabase
-				.from('profiles')
-				.select('id, username')
-				.ilike('username', `%${searchQuery}%`)
-				.neq('id', currentUser.id)
-				.limit(10);
-
-			if (error) throw error;
-			setSearchResults(data);
-		} catch (err) {
-			console.error("Search error:", err);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const getRelationshipStatus = (targetUserId) => {
-		// Check friends
-		if (friends.some(f => f.id === targetUserId)) return 'friends';
-		// Check incoming
-		if (incomingRequests.some(r => r.other.id === targetUserId)) return 'received';
-		// Check outgoing
-		if (outgoingRequests.some(r => r.other.id === targetUserId)) return 'sent';
-
-		return 'none';
-	};
-
-	const sendRequest = async (targetUser) => {
-		try {
-			// Optimistic Update
-			setOutgoingRequests(prev => [...prev, { other: targetUser, status: 'pending' }]);
-
-			const { error } = await supabase
-				.from('friendships')
-				.insert({ user_id: currentUser.id, friend_id: targetUser.id });
-
-			if (error) throw error;
-			await fetchAllRelationships(); // Sync real state
-			setMessage('Demande envoyée !');
-			setTimeout(() => setMessage(''), 2000);
-		} catch (err) {
-			console.error(err);
-			if (err.code === '23505') setMessage('Déjà demandé');
-			else setMessage('Erreur envoi');
-			await fetchAllRelationships(); // Rollback/Sync
-		}
-	};
-
-	const handleRequest = async (friendshipId, action) => { // action: 'accept' | 'decline'
-		try {
-			if (action === 'accept') {
-				const { error } = await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
-				if (error) throw error;
-			} else {
-				const { error } = await supabase.from('friendships').delete().eq('id', friendshipId);
-				if (error) throw error;
-			}
-			fetchAllRelationships();
-		} catch (err) {
-			console.error(err);
-		}
-	};
 
 	return (
 		<div className="matches-screen">
@@ -177,7 +42,7 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary, onInvite, isInRoom }
 				</button>
 			</div>
 
-			{message && <div style={{ textAlign: 'center', color: 'var(--gold)', marginBottom: 10 }}>{message}</div>}
+
 
 			<div className="matches-grid view-list" style={{ display: 'block' }}>
 
