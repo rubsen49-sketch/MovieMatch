@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 
-const FriendsView = ({ onClose, currentUser }) => {
+const FriendsView = ({ onClose, currentUser, onViewLibrary }) => {
 	const [activeTab, setActiveTab] = useState('list'); // 'list', 'add', 'requests'
 	const [friends, setFriends] = useState([]);
 	const [requests, setRequests] = useState([]);
@@ -163,7 +163,11 @@ const FriendsView = ({ onClose, currentUser }) => {
 										<div className="checkbox-circle" style={{ background: 'var(--bg-card)', border: '1px solid #444' }}>👤</div>
 										<span style={{ color: 'white', fontWeight: 'bold' }}>{friend.username}</span>
 									</div>
-									<button className="unified-btn secondary" style={{ width: 'auto', padding: '5px 15px', fontSize: '0.8rem' }}>
+									<button
+										className="unified-btn secondary"
+										style={{ width: 'auto', padding: '5px 15px', fontSize: '0.8rem' }}
+										onClick={() => onViewLibrary(friend)}
+									>
 										Voir Bibliothèque
 									</button>
 								</div>

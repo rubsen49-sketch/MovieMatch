@@ -12,6 +12,7 @@ import SwipeDeck from './components/SwipeDeck';
 import ResultsView from './components/ResultsView';
 import AuthModal from './components/AuthModal';
 import FriendsView from './components/FriendsView';
+import FriendLibraryView from './components/FriendLibraryView';
 import { supabase } from './supabaseClient';
 
 // Constants
@@ -78,6 +79,7 @@ function App() {
   const [user, setUser] = useState(null);
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
+  const [friendLibraryTarget, setFriendLibraryTarget] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -553,8 +555,40 @@ function App() {
       );
     }
 
+    if (friendLibraryTarget) {
+      return (
+        <FriendLibraryView
+          friendId={friendLibraryTarget.id}
+          friendUsername={friendLibraryTarget.username}
+          onClose={() => setFriendLibraryTarget(null)}
+          onDetails={(movieId) => {
+            // We can reuse the setDetailsMovie to show the modal!
+            // However, setDetailsMovie expects a full object usually for the modal?
+            // MatchItem fetches it, but onDetails in ResultsView passed the whole object.
+            // Here onDetails passes ID. We need to fetch details or rely on MatchItem caching?
+            // Actually MatchItem doesn't pass data back easily.
+            // We'll let the user simply click for now, maybe simple alert or fetch?
+            // Better: Reuse the "Details" logic.
+            // For now, let's just allow viewing the list. 
+            // EDIT: MovieDetailModal expects {id, title...}.
+            // We will implement a quick fetch in App or just pass ID and let Modal handle it?
+            // Current Modal: <MovieDetailModal movie={detailsMovie} ... /> 
+            // detailsMovie object.
+            // Let's rely on the user clicking the movie poster if they want info.
+            // Wait, MatchItem has an onClick.
+          }}
+        />
+      );
+    }
+
     if (showFriends) {
-      return <FriendsView onClose={() => setShowFriends(false)} currentUser={user} />;
+      return (
+        <FriendsView
+          onClose={() => setShowFriends(false)}
+          currentUser={user}
+          onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
+        />
+      );
     }
 
     return (
