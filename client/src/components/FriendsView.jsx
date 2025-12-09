@@ -25,7 +25,9 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary, onInvite, isInRoom }
 	return (
 		<div className="matches-screen">
 			<div className="library-header">
-				<button className="btn-back" onClick={onClose}>Retour</button>
+				<button className="btn-utility" onClick={onClose}>
+					<span>←</span> Retour
+				</button>
 				<h2>Amis 👥</h2>
 				<div style={{ width: 50 }}></div>
 			</div>

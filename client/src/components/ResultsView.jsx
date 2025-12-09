@@ -41,7 +41,9 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 	return (
 		<div className="matches-screen">
 			<div className="library-header">
-				<button className="btn-back" onClick={onClose}>Retour</button>
+				<button className="btn-utility" onClick={onClose}>
+					<span>←</span> Retour
+				</button>
 
 				<div className="view-toggles">
 					<button
@@ -61,8 +63,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 				</div>
 
 				<button
-					className={`unified-btn ${isSelectionMode ? 'primary' : 'secondary'}`}
-					style={{ width: 'auto', padding: '5px 15px', fontSize: '0.9rem' }}
+					className={`btn-utility ${isSelectionMode ? 'active' : ''}`}
 					onClick={() => {
 						setIsSelectionMode(!isSelectionMode);
 						setSelectedIds([]);
