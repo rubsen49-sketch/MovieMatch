@@ -17,71 +17,6 @@ import PrivateChat from './components/PrivateChat';
 
 // ... (existing imports)
 
-function App() {
-  // ... (existing state)
-  const [showChat, setShowChat] = useState(false);
-  const [messages, setMessages] = useState([]);
-  // Chat Unread Badge
-  const [unreadCount, setUnreadCount] = useState(0);
-
-  // ... (existing socket listeners)
-
-  // Inside initSocket or useEffect
-  useEffect(() => {
-    // ...
-    newSocket.on('host_promoted', (newHostId) => {
-      // ... (existing)
-    });
-
-    // CHAT LISTENER
-    newSocket.on('receive_message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      if (!showChat) {
-        setUnreadCount((prev) => prev + 1);
-      }
-    });
-
-    // ...
-  }, []);
-
-  // When opening chat, reset badge
-  const toggleChat = () => {
-    setShowChat(!showChat);
-    if (!showChat) setUnreadCount(0);
-  };
-
-  const sendMessage = (text) => {
-    if (socket && room) {
-      socket.emit('send_message', { roomId: room.roomId, message: text, username: user });
-    }
-  };
-
-  // ... (Render)
-
-  return (
-    <div className="app-container">
-      {/* ... (existing UI) */}
-
-      {/* SHOW CHAT only if in a room */}
-      {room && gameStatus !== 'results' && ( // Maybe show in results too? User choice. Let's show it everywhere inside a room.
-        <>
-          <button className="chat-btn-float" onClick={toggleChat}>
-            💬
-            {unreadCount > 0 && <span className="chat-badge">{unreadCount}</span>}
-          </button>
-          <ChatBox
-            isOpen={showChat}
-            onClose={() => setShowChat(false)}
-            messages={messages}
-            onSendMessage={sendMessage}
-            currentUsername={user}
-          />
-        </>
-      )}
-    </div>
-  )
-}
-
 import { supabase } from './supabaseClient';
 
 // Constants
@@ -151,6 +86,11 @@ function App() {
   const [friendLibraryTarget, setFriendLibraryTarget] = useState(null);
   const [activePrivateChat, setActivePrivateChat] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+
+  // Room Chat State
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Check active session
@@ -430,6 +370,13 @@ function App() {
       if (socket.id === newHostId) setIsHost(true);
     });
 
+    socket.on('receive_message', (msg) => {
+      setMessages((prev) => [...prev, msg]);
+      if (!showChat) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    });
+
     return () => {
       socket.off("player_count_update");
       socket.off("settings_update");
@@ -473,6 +420,20 @@ function App() {
     }
   };
 
+  const toggleChat = () => {
+    setShowChat(!showChat);
+    if (!showChat) setUnreadCount(0);
+  };
+
+  const sendMessage = (text) => {
+    if (socket && room) {
+      // Assuming room is string code? The socket event expects { roomId: ... }
+      // Check socketHandler: socket.on('send_message', ({ roomId, message, username }) => ...
+      // 'room' state is the code string.
+      socket.emit('send_message', { roomId: room, message: text, username: user ? (user.user_metadata?.username || 'User') : 'Guest' });
+    }
+  };
+
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
     if (direction === "right") {
@@ -512,6 +473,22 @@ function App() {
 
 
   // --- RENDER ---
+
+  const renderRoomChat = () => (
+    <>
+      <button className="chat-btn-float" onClick={toggleChat}>
+        💬
+        {unreadCount > 0 && <span className="chat-badge">{unreadCount}</span>}
+      </button>
+      <ChatBox
+        isOpen={showChat}
+        onClose={() => setShowChat(false)}
+        messages={messages}
+        onSendMessage={sendMessage}
+        currentUsername={user ? (user.user_metadata?.username || 'User') : 'Guest'}
+      />
+    </>
+  );
 
   const renderModal = () => {
     if (!detailsMovie) return null;
@@ -589,22 +566,25 @@ function App() {
     }
 
     return (
-      <Lobby
-        room={room}
-        playerCount={playerCount}
-        isHost={isHost}
-        settings={{
-          providers: selectedProviders,
-          voteMode: voteMode,
-          rating: minRating,
-          genre: selectedGenre
-        }}
-        updateSettings={syncSettings}
-        startGame={startGame}
-        leaveRoom={leaveRoom}
-        shareCode={shareCode}
-        onOpenGenreSelector={() => setShowGenreSelector(true)}
-      />
+      <>
+        <Lobby
+          room={room}
+          playerCount={playerCount}
+          isHost={isHost}
+          settings={{
+            providers: selectedProviders,
+            voteMode: voteMode,
+            rating: minRating,
+            genre: selectedGenre
+          }}
+          updateSettings={syncSettings}
+          startGame={startGame}
+          leaveRoom={leaveRoom}
+          shareCode={shareCode}
+          onOpenGenreSelector={() => setShowGenreSelector(true)}
+        />
+        {renderRoomChat()}
+      </>
     );
   }
 
@@ -740,6 +720,7 @@ function App() {
         leaveRoom={leaveRoom}
         providersDisplay={providersDisplay}
       />
+      {renderRoomChat()}
     </>
   );
 }

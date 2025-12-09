@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-const ChatBox = ({ messages, onSendMessage, onClose, isOpen, currentUsername }) => {
+const ChatBox = ({ messages, onSendMessage, onClose, isOpen, currentUsername, title = "Tchat du Salon 💬" }) => {
 	const [inputText, setInputText] = useState('');
 	const messagesEndRef = useRef(null);
 
@@ -27,7 +27,7 @@ const ChatBox = ({ messages, onSendMessage, onClose, isOpen, currentUsername }) 
 	return (
 		<div className="chat-overlay">
 			<div className="chat-header">
-				<h3>Tchat du Salon 💬</h3>
+				<h3>{title}</h3>
 				<button className="close-chat" onClick={onClose}>×</button>
 			</div>
 
