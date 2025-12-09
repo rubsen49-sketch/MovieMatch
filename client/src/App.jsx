@@ -219,11 +219,13 @@ function App() {
     const currentUsername = user ? (user.user_metadata?.username || 'Utilisateur') : 'Invité';
 
     if (targetRoom !== "") {
+      console.log("Joing/Creating room:", targetRoom);
       const seed = targetRoom.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const randomPage = (seed % 30) + 1;
       setPage(randomPage);
 
       if (isHost || roomCodeToJoin) {
+        console.log("Emitting create_room...", { room: targetRoom, username: currentUsername });
         socket.emit("create_room", { room: targetRoom, username: currentUsername });
         if (user) {
           // Sync Profile to public table for search
@@ -597,6 +599,7 @@ function App() {
       );
     }
 
+    console.log("Rendering Lobby. Params:", { room, playerCount, players, isHost });
     return (
       <>
         <Lobby

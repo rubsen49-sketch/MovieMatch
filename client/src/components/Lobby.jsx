@@ -35,6 +35,8 @@ const Lobby = ({
 	const minRating = settings.rating || 0;
 	const genreCount = (settings.genre || []).length;
 
+	console.log("Lobby Render. Players:", players);
+
 	if (isHost && showHostSettings) {
 		return (
 			<div className="welcome-screen">
