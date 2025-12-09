@@ -1135,6 +1135,59 @@ select:focus {
   transform: scale(1.05);
 }
 
+/* FRIENDS LIST ERGONOMICS */
+.friend-card {
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  /* Allow wrapping on small screens */
+  gap: 10px;
+}
+
+.friend-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  /* Take available name space */
+  min-width: 120px;
+}
+
+.friend-name {
+  color: white;
+  font-weight: bold;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.friend-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.delete-icon-btn {
+  background: transparent;
+  border: 1px solid #555;
+  color: #888;
+  padding: 8px 12px;
+  border-radius: 50%;
+  font-size: 1rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.delete-icon-btn:hover {
+  background: var(--red);
+  color: white;
+  border-color: var(--red);
+}
+
+
 /* --- MOBILE RESPONSIVE --- */
 .view-toggles {
   display: flex;
