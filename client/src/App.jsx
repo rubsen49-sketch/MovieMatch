@@ -710,8 +710,17 @@ function App() {
           </div>
         )}
 
-        {/* --- AUTH MODAL (Moved here so it's reachable) --- */}
+        {/* --- AUTH MODAL --- */}
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+
+        {/* PRIVATE CHAT */}
+        {activePrivateChat && user && (
+          <PrivateChat
+            currentUser={user}
+            targetUser={activePrivateChat}
+            onClose={() => setActivePrivateChat(null)}
+          />
+        )}
       </div>
     );
   }
