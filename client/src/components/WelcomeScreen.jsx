@@ -108,14 +108,14 @@ const WelcomeScreen = ({
 					<button className="unified-btn secondary" onClick={() => setView("join")}>
 						<span>🚀</span> Rejoindre
 					</button>
-					<button onClick={() => setShowMyMatches(true)} style={{ background: 'transparent', border: 'none', color: '#888', textDecoration: 'underline', marginTop: '20px', cursor: 'pointer' }}>
+					<button onClick={() => setShowMyMatches(true)} className="link-matches">
 						Voir mes matchs
 					</button>
 				</div>
 			)}
 			{view === "join" && (
 				<div className="menu-buttons fade-in">
-					<input type="text" placeholder="CODE DE LA SALLE" value={room} onChange={(e) => setRoom(e.target.value.toUpperCase())} style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '2px', textTransform: 'uppercase' }} />
+					<input type="text" placeholder="CODE DE LA SALLE" value={room} onChange={(e) => setRoom(e.target.value.toUpperCase())} className="input-room-code" />
 					<button className="unified-btn primary" onClick={() => joinLobby(null)}>Rejoindre</button>
 					<button className="unified-btn secondary" onClick={() => setView("menu")}>Annuler</button>
 				</div>
