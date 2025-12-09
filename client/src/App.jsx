@@ -10,6 +10,8 @@ import GenreSelector from './components/GenreSelector';
 import Lobby from './components/Lobby';
 import SwipeDeck from './components/SwipeDeck';
 import ResultsView from './components/ResultsView';
+import AuthModal from './components/AuthModal';
+import { supabase } from './supabaseClient';
 
 // Constants
 import { GENRES_LIST } from './constants';
@@ -71,6 +73,75 @@ function App() {
   });
   const [detailsMovie, setDetailsMovie] = useState(null);
 
+  // --- SUPABASE AUTH & SYNC ---
+  const [user, setUser] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+
+  useEffect(() => {
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) syncLibraryWithCloud(session.user.id);
+    });
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) syncLibraryWithCloud(session.user.id);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const syncLibraryWithCloud = async (userId) => {
+    try {
+      // 1. Fetch Cloud Data
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('library')
+        .eq('id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') { // PGRST116 = JSON 0 rows (profile doesn't exist yet)
+        console.error("Error fetching cloud library:", error);
+      }
+
+      const cloudLibrary = data?.library || [];
+      const localLibrary = JSON.parse(localStorage.getItem('myMatches')) || [];
+
+      // 2. Merge (Union of IDs)
+      // We prioritize Cloud status if exists, otherwise Local
+      const mergedMap = new Map();
+      localLibrary.forEach(item => mergedMap.set(item.id, item));
+      cloudLibrary.forEach(item => mergedMap.set(item.id, item)); // Cloud overwrites local if duplicate
+
+      const mergedArray = Array.from(mergedMap.values());
+
+      // 3. Update Local & State
+      setSavedMatches(mergedArray);
+      localStorage.setItem('myMatches', JSON.stringify(mergedArray));
+
+      // 4. Update Cloud (to sync back any local-only items)
+      await supabase.from('profiles').upsert({
+        id: userId,
+        library: mergedArray,
+        updated_at: new Date()
+      });
+
+    } catch (err) {
+      console.error("Sync error:", err);
+    }
+  };
+
+  const saveToCloud = async (newLibrary) => {
+    if (!user) return;
+    await supabase.from('profiles').upsert({
+      id: user.id,
+      library: newLibrary,
+      updated_at: new Date()
+    });
+  };
+
   // --- ACTIONS BIBLIOTHÈQUE ---
   const updateMovieStatus = (movieId, newStatus) => {
     const updated = savedMatches.map(m =>
@@ -78,6 +149,7 @@ function App() {
     );
     setSavedMatches(updated);
     localStorage.setItem('myMatches', JSON.stringify(updated));
+    saveToCloud(updated);
   };
 
   const removeMovie = (movieId) => {
@@ -85,6 +157,7 @@ function App() {
       const updated = savedMatches.filter(m => m.id !== movieId);
       setSavedMatches(updated);
       localStorage.setItem('myMatches', JSON.stringify(updated));
+      saveToCloud(updated);
     }
   };
 
@@ -217,6 +290,7 @@ function App() {
         const newMatches = [newMatch, ...currentMatches];
         localStorage.setItem('myMatches', JSON.stringify(newMatches));
         setSavedMatches(newMatches);
+        saveToCloud(newMatches);
       }
     });
 
@@ -402,6 +476,14 @@ function App() {
             <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
             <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
             <button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
+            {!user ? (
+              <button onClick={() => setShowAuthModal(true)} className="unified-btn quit" style={{ marginTop: 10 }}>Se connecter (Sauvegarde)</button>
+            ) : (
+              <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                <span style={{ color: '#4ade80', fontSize: '0.8rem' }}>Connecté : {user.email}</span>
+                <button onClick={() => supabase.auth.signOut()} className="unified-btn quit">Se déconnecter</button>
+              </div>
+            )}
           </div>
         )}
         {view === "join" && (
@@ -414,6 +496,12 @@ function App() {
       </div>
     );
   }
+
+  // --- AUTH MODAL ---
+  if (showAuthModal) {
+    return <AuthModal onClose={() => setShowAuthModal(false)} />;
+  }
+
 
   // --- GAME ---
   return (
