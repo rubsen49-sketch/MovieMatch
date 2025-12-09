@@ -148,7 +148,7 @@ module.exports = (io, socket) => {
 					io.to(room).emit("player_count_update", players.length); // Keep backward compat logic if needed, but list update covers count
 
 					// --- HOST MIGRATION LOGIC ---
-					const roomSockets = io.sockets.adapter.rooms.get(room); // Set of socket IDs
+					// roomSockets is already defined above
 					if (roomSockets) {
 						const activeIds = Array.from(roomSockets);
 						const newHostId = migrateHost(room, socket.id, activeIds);
