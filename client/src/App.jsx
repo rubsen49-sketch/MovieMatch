@@ -302,7 +302,7 @@ function App() {
           )}
           <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
           <h2>{match.movieTitle}</h2>
-          <button className="primary-btn" onClick={() => setMatch(null)}>Continuer</button>
+          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
         </div>
       </>
     );
@@ -354,7 +354,7 @@ function App() {
         {view === "join" && (
           <div className="input-group">
             <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
-            <button className="primary-btn" onClick={() => joinLobby(null)}>Valider</button>
+            <button className="unified-btn primary" onClick={() => joinLobby(null)}>Valider</button>
             <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
           </div>
         )}
