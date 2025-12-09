@@ -12,8 +12,6 @@ import SwipeDeck from './components/SwipeDeck';
 import ResultsView from './components/ResultsView';
 import AuthModal from './components/AuthModal';
 import FriendsView from './components/FriendsView';
-import ChatBox from './components/ChatBox';
-import PrivateChat from './components/PrivateChat';
 
 // ... (existing imports)
 
@@ -85,13 +83,7 @@ function App() {
   const [showMyMatches, setShowMyMatches] = useState(false);
   const [showFriends, setShowFriends] = useState(false);
   const [friendLibraryTarget, setFriendLibraryTarget] = useState(null);
-  const [activePrivateChat, setActivePrivateChat] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-
-  // Room Chat State
-  const [showChat, setShowChat] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     // Check active session
@@ -174,6 +166,12 @@ function App() {
       updated_at: new Date()
     });
   };
+
+  useEffect(() => {
+    if (user) {
+      socket.emit('register_user', user.id);
+    }
+  }, [user]);
 
   // --- ACTIONS BIBLIOTHÈQUE ---
   const updateMovieStatus = (movieId, newStatus) => {
@@ -345,6 +343,36 @@ function App() {
       if (settings.providers !== undefined) setSelectedProviders(settings.providers);
       if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
     });
+
+    socket.on('invitation_received', ({ roomCode, inviterName }) => {
+      if (confirm(`${inviterName} vous invite à rejoindre le salon ${roomCode}. Accepter ? 🎯`)) {
+        setRoom(roomCode);
+        // We need to ensure we leave current room if any? joinLobby handles it?
+        // joinLobby checks if roomCodeToJoin is provided.
+        // But we can't call joinLobby easily if it's not defined inside useEffect or we need to useCallback.
+        // joinLobby IS defined in component scope.
+        // But this effect runs on mount. `joinLobby` changes? No, functions are recreated.
+        // Ideally, we shouldn't use closure variables in [] effect.
+        // But `joinLobby` depends on state?
+        // Let's use a ref or just `window.location.reload` with param?
+        // Or easier: set a "pendingInvitation" state and handle it?
+        // Or just call it, ignoring stale closure if joinLobby is stable enough or we don't care about stale props (it uses `room` state but we pass arg).
+        // Actually, `socket` is outside.
+        // Let's just emit join directly or trigger a UI state.
+
+        // Cleanest: Trigger a state change that `useEffect` picks up, or just Force Join.
+        // Since this is a quick implementation:
+        socket.emit("join_room", { room: roomCode, username: user ? (user.user_metadata?.username || 'Invité') : 'Invité' }, (response) => {
+          if (response.status === "ok") {
+            setIsInRoom(true);
+            setGameStarted(false);
+            setView("lobby");
+            setRoom(roomCode); // Update UI
+          }
+        });
+      }
+    });
+
     socket.on("game_started", () => setGameStarted(true));
     socket.on("match_found", (data) => {
       setMatch(data);
@@ -374,13 +402,6 @@ function App() {
     socket.on("host_update", (newHostId) => {
       // Just in case we need to know who the new host is, though "you_are_host" handles the permission
       if (socket.id === newHostId) setIsHost(true);
-    });
-
-    socket.on('receive_message', (msg) => {
-      setMessages((prev) => [...prev, msg]);
-      if (!showChat) {
-        setUnreadCount((prev) => prev + 1);
-      }
     });
 
     return () => {
@@ -426,20 +447,6 @@ function App() {
     }
   };
 
-  const toggleChat = () => {
-    setShowChat(!showChat);
-    if (!showChat) setUnreadCount(0);
-  };
-
-  const sendMessage = (text) => {
-    if (socket && room) {
-      // Assuming room is string code? The socket event expects { roomId: ... }
-      // Check socketHandler: socket.on('send_message', ({ roomId, message, username }) => ...
-      // 'room' state is the code string.
-      socket.emit('send_message', { roomId: room, message: text, username: user ? (user.user_metadata?.username || 'User') : 'Guest' });
-    }
-  };
-
   const handleSwipe = (direction) => {
     const currentMovie = movies[currentIndex];
     if (direction === "right") {
@@ -479,50 +486,50 @@ function App() {
 
 
   const handleAddFriend = async (targetUsername) => {
-    if (!user) return alert("Connectez-vous pour ajouter des amis !");
+    // ...
+  };
 
-    try {
-      const { data: profiles, error: pError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', targetUsername)
-        .single();
-
-      if (pError || !profiles) return alert("Utilisateur introuvable.");
-
-      const { error: fError } = await supabase
-        .from('friendships')
-        .insert({ user_id: user.id, friend_id: profiles.id });
-
-      if (fError) {
-        if (fError.code === '23505') alert("Déjà demandé ou amis !");
-        else throw fError;
-      } else {
-        alert(`Demande envoyée à ${targetUsername} !`);
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Erreur lors de l'ajout.");
-    }
+  const handleInviteFriend = (friendProfile) => {
+    if (!room) return;
+    socket.emit('invite_friend', {
+      friendId: friendProfile.id,
+      roomCode: room,
+      inviterName: user?.user_metadata?.username || 'Un ami'
+    });
+    alert(`Invitation envoyée à ${friendProfile.username} !`);
   };
 
   // --- RENDER ---
+  if (!user) return alert("Connectez-vous pour ajouter des amis !");
 
-  const renderRoomChat = () => (
-    <>
-      <button className="chat-btn-float" onClick={toggleChat}>
-        💬
-        {unreadCount > 0 && <span className="chat-badge">{unreadCount}</span>}
-      </button>
-      <ChatBox
-        isOpen={showChat}
-        onClose={() => setShowChat(false)}
-        messages={messages}
-        onSendMessage={sendMessage}
-        currentUsername={user ? (user.user_metadata?.username || 'User') : 'Guest'}
-      />
-    </>
-  );
+  try {
+    const { data: profiles, error: pError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('username', targetUsername)
+      .single();
+
+    if (pError || !profiles) return alert("Utilisateur introuvable.");
+
+    const { error: fError } = await supabase
+      .from('friendships')
+      .insert({ user_id: user.id, friend_id: profiles.id });
+
+    if (fError) {
+      if (fError.code === '23505') alert("Déjà demandé ou amis !");
+      else throw fError;
+    } else {
+      alert(`Demande envoyée à ${targetUsername} !`);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'ajout.");
+  }
+};
+
+// --- RENDER ---
+
+const renderModal = () => {
 
   const renderModal = () => {
     if (!detailsMovie) return null;
@@ -621,7 +628,6 @@ function App() {
           shareCode={shareCode}
           onOpenGenreSelector={() => setShowGenreSelector(true)}
         />
-        {renderRoomChat()}
       </>
     );
   }
@@ -672,21 +678,13 @@ function App() {
 
     if (showFriends) {
       return (
-        <>
-          <FriendsView
-            onClose={() => setShowFriends(false)}
-            currentUser={user}
-            onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
-            onOpenChat={(friend) => setActivePrivateChat(friend)}
-          />
-          {activePrivateChat && user && (
-            <PrivateChat
-              currentUser={user}
-              targetUser={activePrivateChat}
-              onClose={() => setActivePrivateChat(null)}
-            />
-          )}
-        </>
+        <FriendsView
+          onClose={() => setShowFriends(false)}
+          currentUser={user}
+          onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
+          onInvite={handleInviteFriend}
+          isInRoom={isInRoom}
+        />
       );
     }
 
@@ -730,15 +728,6 @@ function App() {
 
         {/* --- AUTH MODAL --- */}
         {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
-
-        {/* PRIVATE CHAT */}
-        {activePrivateChat && user && (
-          <PrivateChat
-            currentUser={user}
-            targetUser={activePrivateChat}
-            onClose={() => setActivePrivateChat(null)}
-          />
-        )}
       </div>
     );
   }
@@ -758,7 +747,6 @@ function App() {
         leaveRoom={leaveRoom}
         providersDisplay={providersDisplay}
       />
-      {renderRoomChat()}
     </>
   );
 }

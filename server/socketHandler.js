@@ -1,7 +1,17 @@
 const { createRoom, getRoom, updateRoomSettings, addLike, migrateHost } = require('./roomStore');
 
+// Map to track UserID -> SocketID for invites
+const userSockets = new Map();
+
 module.exports = (io, socket) => {
 	console.log(`User Connected: ${socket.id}`);
+
+	// AUTH / REGISTRY
+	socket.on('register_user', (userId) => {
+		userSockets.set(userId, socket.id);
+		socket.userId = userId;
+		console.log(`User Registered: ${userId} -> ${socket.id}`);
+	});
 
 	// Helper to broadcast player list
 	const broadcastRoomPlayers = (room) => {
@@ -80,14 +90,15 @@ module.exports = (io, socket) => {
 		io.to(room).emit("game_started");
 	});
 
-	// --- CHAT EVENTS ---
-	socket.on('send_message', ({ roomId, message, username }) => {
-		io.to(roomId).emit('receive_message', {
-			user: username,
-			text: message,
-			type: 'user',
-			timestamp: new Date().toISOString()
-		});
+	// INVITATIONS
+	socket.on('invite_friend', ({ friendId, roomCode, inviterName }) => {
+		const targetSocketId = userSockets.get(friendId);
+		if (targetSocketId) {
+			io.to(targetSocketId).emit('invitation_received', {
+				roomCode,
+				inviterName
+			});
+		}
 	});
 
 	// 4. SWIPE INTELLIGENT (Cœur du système)
@@ -124,6 +135,9 @@ module.exports = (io, socket) => {
 	});
 
 	socket.on("disconnecting", () => {
+		if (socket.userId) {
+			userSockets.delete(socket.userId);
+		}
 		try {
 			const rooms = socket.rooms;
 			rooms.forEach((room) => {
