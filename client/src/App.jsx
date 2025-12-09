@@ -13,6 +13,7 @@ import ResultsView from './components/ResultsView';
 import AuthModal from './components/AuthModal';
 import FriendsView from './components/FriendsView';
 import ChatBox from './components/ChatBox';
+import PrivateChat from './components/PrivateChat';
 
 // ... (existing imports)
 
@@ -570,35 +571,13 @@ function App() {
           <h2>{match.movieTitle}</h2>
           <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
         </div>
-// ... imports
-        import PrivateChat from './components/PrivateChat';
+      </>
+    );
+  }
 
-        // ... inside App component
-        const [activePrivateChat, setActivePrivateChat] = useState(null);
+  // --- LOBBY & GENRE ---
 
-        // ...
-
-        {/* PRIVATE CHAT */}
-        {activePrivateChat && user && (
-          <PrivateChat
-            currentUser={user}
-            targetUser={activePrivateChat}
-            onClose={() => setActivePrivateChat(null)}
-          />
-        )}
-
-        {/* CHAT SYSTEM (ROOM) */}
-      // ...
-
-        // ... inside render where FriendsView is called
-        <FriendsView
-          onClose={() => setShowFriends(false)}
-          currentUser={user}
-          onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
-          onOpenChat={(friend) => setActivePrivateChat(friend)}
-        />
-
-        if (isInRoom && !gameStarted) {
+  if (isInRoom && !gameStarted) {
     if (showGenreSelector) {
       return (
         <GenreSelector
@@ -606,32 +585,32 @@ function App() {
           toggleGenre={toggleGenre}
           onValidate={() => setShowGenreSelector(false)}
         />
-        );
+      );
     }
 
-        return (
-        <Lobby
-          room={room}
-          playerCount={playerCount}
-          isHost={isHost}
-          settings={{
-            providers: selectedProviders,
-            voteMode: voteMode,
-            rating: minRating,
-            genre: selectedGenre
-          }}
-          updateSettings={syncSettings}
-          startGame={startGame}
-          leaveRoom={leaveRoom}
-          shareCode={shareCode}
-          onOpenGenreSelector={() => setShowGenreSelector(true)}
-        />
-        );
+    return (
+      <Lobby
+        room={room}
+        playerCount={playerCount}
+        isHost={isHost}
+        settings={{
+          providers: selectedProviders,
+          voteMode: voteMode,
+          rating: minRating,
+          genre: selectedGenre
+        }}
+        updateSettings={syncSettings}
+        startGame={startGame}
+        leaveRoom={leaveRoom}
+        shareCode={shareCode}
+        onOpenGenreSelector={() => setShowGenreSelector(true)}
+      />
+    );
   }
 
-        // --- RENDER LOGIC for WELCOME SCREEN components ---
+  // --- RENDER LOGIC for WELCOME SCREEN components ---
 
-        if (!isInRoom) {
+  if (!isInRoom) {
     if (showMyMatches) {
       return (
         <ResultsView
@@ -644,10 +623,10 @@ function App() {
           onBulkUpdate={bulkUpdateMovieStatus}
           onBulkRemove={bulkRemoveMovies}
         />
-        );
+      );
     }
 
-        if (friendLibraryTarget) {
+    if (friendLibraryTarget) {
       return (
         <FriendLibraryView
           friendId={friendLibraryTarget.id}
@@ -670,80 +649,90 @@ function App() {
             // Wait, MatchItem has an onClick.
           }}
         />
-        );
+      );
     }
 
-        if (showFriends) {
+    if (showFriends) {
       return (
-        <FriendsView
-          onClose={() => setShowFriends(false)}
-          currentUser={user}
-          onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
-        />
-        );
+        <>
+          <FriendsView
+            onClose={() => setShowFriends(false)}
+            currentUser={user}
+            onViewLibrary={(friend) => setFriendLibraryTarget(friend)}
+            onOpenChat={(friend) => setActivePrivateChat(friend)}
+          />
+          {activePrivateChat && user && (
+            <PrivateChat
+              currentUser={user}
+              targetUser={activePrivateChat}
+              onClose={() => setActivePrivateChat(null)}
+            />
+          )}
+        </>
+      );
     }
 
-        return (
-        <div className="welcome-screen">
-          <div className="top-right-auth">
-            {!user ? (
-              <button onClick={() => setShowAuthModal(true)} className="auth-btn">👤 Compte</button>
-            ) : (
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <button
-                  onClick={() => setShowFriends(true)}
-                  className="auth-btn friend-btn-bubble"
-                >
-                  👥 Amis
-                </button>
+    return (
+      <div className="welcome-screen">
+        <div className="top-right-auth">
+          {!user ? (
+            <button onClick={() => setShowAuthModal(true)} className="auth-btn">👤 Compte</button>
+          ) : (
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowFriends(true)}
+                className="auth-btn friend-btn-bubble"
+              >
+                👥 Amis
+              </button>
 
-                <div className="auth-status">
-                  <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
-                  <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
-                </div>
+              <div className="auth-status">
+                <span>{user.user_metadata?.username || user.email.split('@')[0]}</span>
+                <button onClick={() => supabase.auth.signOut()} className="auth-logout">✕</button>
               </div>
-            )}
-          </div>
-
-          <h1>Movie Match 🍿</h1>
-          {view === "menu" && (
-            <div className="menu-buttons">
-              <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
-              <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
-              <button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
             </div>
           )}
-          {view === "join" && (
-            <div className="input-group">
-              <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
-              <button className="unified-btn primary" onClick={() => joinLobby(null)}>Valider</button>
-              <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
-            </div>
-          )}
-
-          {/* --- AUTH MODAL (Moved here so it's reachable) --- */}
-          {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
         </div>
-        );
+
+        <h1>Movie Match 🍿</h1>
+        {view === "menu" && (
+          <div className="menu-buttons">
+            <button className="big-btn btn-create" onClick={generateRoomCode}>Créer une salle</button>
+            <button className="big-btn btn-join" onClick={() => setView("join")}>Rejoindre</button>
+            <button onClick={() => setShowMyMatches(true)} className="link-matches">Voir mes matchs</button>
+          </div>
+        )}
+        {view === "join" && (
+          <div className="input-group">
+            <input type="text" placeholder="Code..." onChange={(e) => setRoom(e.target.value.toUpperCase())} />
+            <button className="unified-btn primary" onClick={() => joinLobby(null)}>Valider</button>
+            <button className="btn-back" onClick={() => setView("menu")}>Annuler</button>
+          </div>
+        )}
+
+        {/* --- AUTH MODAL (Moved here so it's reachable) --- */}
+        {showAuthModal && <AuthModal onClose={() => setShowAuthModal(false)} />}
+      </div>
+    );
   }
 
 
 
 
-        // --- GAME ---
-        return (
-        <>
-          {renderModal()}
-          <SwipeDeck
-            movies={movies}
-            currentIndex={currentIndex}
-            handleSwipe={handleSwipe}
-            setDetailsMovie={setDetailsMovie}
-            leaveRoom={leaveRoom}
-            providersDisplay={providersDisplay}
-          />
-        </>
-        );
+  // --- GAME ---
+  return (
+    <>
+      {renderModal()}
+      <SwipeDeck
+        movies={movies}
+        currentIndex={currentIndex}
+        handleSwipe={handleSwipe}
+        setDetailsMovie={setDetailsMovie}
+        leaveRoom={leaveRoom}
+        providersDisplay={providersDisplay}
+      />
+    </>
+  );
 }
 
-        export default App;
+export default App;
