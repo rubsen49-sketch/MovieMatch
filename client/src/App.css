@@ -1409,16 +1409,6 @@ select:focus {
   }
 }
 
-background: transparent;
-border: none;
-color: #888;
-padding: 5px 12px;
-font-size: 1.2rem;
-cursor: pointer;
-border-radius: 8px;
-line-height: 1;
-}
-
 .view-btn.active {
   background: var(--gold);
   color: black;
