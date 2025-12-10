@@ -8,6 +8,7 @@ import toast, { Toaster } from 'react-hot-toast';
 
 // Components
 import MainLayout from './components/MainLayout'; // [NEW] Wrapper
+import ErrorBoundary from './components/ErrorBoundary'; // [NEW] Error Handling
 import MovieDetailModal from './components/MovieDetailModal';
 import GenreSelector from './components/GenreSelector';
 import Lobby from './components/Lobby';
@@ -16,6 +17,7 @@ import WelcomeScreen from './components/WelcomeScreen';
 import ResultsView from './components/ResultsView'; // Needed for direct tab access
 import { seededShuffle } from './utils/gameUtils'; // Restore seeded shuffle logic // Needed for direct tab access
 import AuthModal from './components/AuthModal';
+import FriendsView from './components/FriendsView'; // [NEW] Import missing component to fix crash
 
 // ... (existing imports)
 
@@ -424,16 +426,18 @@ function App() {
 
     if (activeTab === 'friends') {
       return (
-        <FriendsView
-          onClose={() => setActiveTab('home')}
-          currentUser={user}
-          onViewLibrary={(friend) => {
-            console.log("View friend library", friend);
-            setFriendLibraryTarget(friend);
-          }}
-          onInvite={handleInviteFriend}
-          isInRoom={isInRoom}
-        />
+        <ErrorBoundary>
+          <FriendsView
+            onClose={() => setActiveTab('home')}
+            currentUser={user}
+            onViewLibrary={(friend) => {
+              console.log("View friend library", friend);
+              setFriendLibraryTarget(friend);
+            }}
+            onInvite={handleInviteFriend}
+            isInRoom={isInRoom}
+          />
+        </ErrorBoundary>
       );
     }
 
