@@ -321,6 +321,9 @@ function App() {
     }
   }, [currentIndex, movies.length, gameStarted]);
 
+  // Debug code removed
+
+
 
 
   const resetMyMatches = () => {
@@ -399,29 +402,7 @@ function App() {
   };
 
   const renderContent = () => {
-    // 1. MATCH OVERLAY (Top Priority - Global)
-    if (match) {
-      console.log("Rendering Match Overlay with:", match); // [DEBUG]
-      return (
-        <div className="match-overlay">
-          <h1 className="match-title">IT'S A MATCH!</h1>
-          <img
-            src={match.moviePoster ? `https://image.tmdb.org/t/p/w500${match.moviePoster}` : 'https://via.placeholder.com/500x750?text=No+Poster'}
-            alt={match.movieTitle || "Film mystère"}
-            className="match-poster clickable"
-            onClick={() => setDetailsMovie({
-              id: match.movieId,
-              title: match.movieTitle,
-              poster_path: match.moviePoster,
-              overview: match.overview
-            })}
-          />
-          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
-          <h2>{match.movieTitle}</h2>
-          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
-        </div>
-      );
-    }
+
 
     // 2. TABS NAVIGATION (Matches, Friends) - Priority over Lobby/Home
     if (activeTab === 'matches') {
@@ -550,7 +531,7 @@ function App() {
       if (isInRoom && !gameStarted) key = 'lobby';
       else if (isInRoom && gameStarted) key = 'game';
       else if (showAuthModal) key = 'auth';
-      else if (match) key = 'match';
+
       else key = 'dashboard';
     }
 
@@ -594,6 +575,28 @@ function App() {
       )}
 
       {renderModal()}
+
+      {/* MATCH OVERLAY MOVED TO ROOT to avoid transform stacking context issues */}
+      {match && (
+        <div className="match-overlay">
+          <h1 className="match-title">IT'S A MATCH!</h1>
+          <img
+            src={match.moviePoster ? `https://image.tmdb.org/t/p/w500${match.moviePoster}` : 'https://via.placeholder.com/500x750?text=No+Poster'}
+            alt={match.movieTitle || "Film mystère"}
+            className="match-poster clickable"
+            onClick={() => setDetailsMovie({
+              id: match.movieId,
+              title: match.movieTitle,
+              poster_path: match.moviePoster,
+              overview: match.overview
+            })}
+          />
+          <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
+          <h2>{match.movieTitle}</h2>
+          <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
+        </div>
+      )}
+
 
       {/* Animated Content Wrapper */}
       {renderAnimatedContent()}
