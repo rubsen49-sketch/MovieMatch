@@ -55,36 +55,37 @@ const FriendsView = ({ onClose, currentUser, onViewLibrary, onInvite, isInRoom }
 							<p style={{ textAlign: 'center', color: '#666' }}>Vous n'avez pas encore d'amis.</p>
 						) : (
 							friends.map(friend => (
-								<div key={friend.id} className="mini-card friend-card">
-									<div className="friend-info">
-										<div className="checkbox-circle" style={{ background: 'var(--bg-card)', border: '1px solid #444' }}>👤</div>
-										<span className="friend-name">{friend.username}</span>
+								<div key={friend.id} className="friend-item-row">
+									<div className="friend-info-row">
+										<div className="friend-avatar-small">
+											{friend.username.charAt(0).toUpperCase()}
+										</div>
+										<span className="friend-name-text">{friend.username}</span>
 									</div>
-									<div className="friend-actions">
+
+									<div className="friend-actions-row">
 										{isInRoom && onInvite && (
 											<button
-												className="unified-btn secondary btn-library"
+												className="action-icon-btn invite"
 												onClick={() => onInvite(friend)}
-												style={{ marginRight: 5 }}
-												title="Inviter dans le salon"
+												title="Inviter"
 											>
-												<span className="btn-text">Inviter</span>
-												<span className="btn-icon">📩</span>
+												📩
 											</button>
 										)}
 										<button
-											className="unified-btn secondary btn-library"
+											className="action-icon-btn library"
 											onClick={() => onViewLibrary(friend)}
+											title="Voir la bibliothèque"
 										>
-											<span className="btn-text">Voir Bibliothèque</span>
-											<span className="btn-icon">📚</span>
+											📚
 										</button>
 										<button
-											className="unified-btn delete-icon-btn"
+											className="action-icon-btn delete"
 											onClick={() => removeFriend(friend.friendship_id, friend.username)}
 											title="Supprimer"
 										>
-											✕
+											✖️
 										</button>
 									</div>
 								</div>
