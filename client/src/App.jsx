@@ -405,19 +405,17 @@ function App() {
       return (
         <div className="match-overlay">
           <h1 className="match-title">IT'S A MATCH!</h1>
-          {match.moviePoster && (
-            <img
-              src={`https://image.tmdb.org/t/p/w500${match.moviePoster}`}
-              alt={match.movieTitle}
-              className="match-poster clickable"
-              onClick={() => setDetailsMovie({
-                id: match.movieId,
-                title: match.movieTitle,
-                poster_path: match.moviePoster,
-                overview: match.overview
-              })}
-            />
-          )}
+          <img
+            src={match.moviePoster ? `https://image.tmdb.org/t/p/w500${match.moviePoster}` : 'https://via.placeholder.com/500x750?text=No+Poster'}
+            alt={match.movieTitle || "Film mystère"}
+            className="match-poster clickable"
+            onClick={() => setDetailsMovie({
+              id: match.movieId,
+              title: match.movieTitle,
+              poster_path: match.moviePoster,
+              overview: match.overview
+            })}
+          />
           <div className="match-hint-click">👆 Toucher l'affiche pour infos</div>
           <h2>{match.movieTitle}</h2>
           <button className="unified-btn primary" onClick={() => setMatch(null)}>Continuer</button>
