@@ -40,6 +40,8 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 
 	return (
 		<div className="matches-screen">
+
+
 			<div className="library-header">
 				<button className="btn-utility" onClick={onClose}>
 					<span>←</span> Retour
@@ -179,8 +181,23 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 				</div>
 			)}
 
-			{savedMatches.length === 0 && (
-				<p style={{ color: '#666', marginTop: 50 }}>Aucun film pour le moment...</p>
+			{matchesToShow.length === 0 && (
+				<div style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					justifyContent: 'center',
+					height: '50vh',
+					color: '#888'
+				}}>
+					<span style={{ fontSize: '3rem', marginBottom: '1rem' }}>📭</span>
+					<p>Aucun film dans cette liste.</p>
+				</div>
+			)}
+
+			{/* Global empty state (redundant but kept for safe initialization check if needed) */}
+			{savedMatches.length === 0 && matchesToShow.length > 0 && (
+				<p style={{ color: '#fff', textAlign: 'center', marginTop: 50 }}>Aucun film pour le moment...</p>
 			)}
 		</div>
 	);

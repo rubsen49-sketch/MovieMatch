@@ -49,6 +49,7 @@ function App() {
 
   // [NEW] Navigation State
   const [activeTab, setActiveTab] = useState('home'); // 'home', 'matches', 'friends'
+  const [restoreSettingsOnLobbyReturn, setRestoreSettingsOnLobbyReturn] = useState(false);
 
   // Advanced Filter Defaults
   const [yearRange, setYearRange] = useState({ min: 1970, max: new Date().getFullYear() });
@@ -402,13 +403,11 @@ function App() {
   };
 
   const renderContent = () => {
-
-
     // 2. TABS NAVIGATION (Matches, Friends) - Priority over Lobby/Home
     if (activeTab === 'matches') {
       return (
         <ResultsView
-          savedMatches={savedMatches}
+          savedMatches={savedMatches || []}
           onClose={() => setActiveTab('home')}
           resetMyMatches={resetMyMatches}
           onDetails={(movieData) => setDetailsMovie(movieData)}
@@ -440,7 +439,6 @@ function App() {
 
     // 3. HOME TAB (Welcome OR Game/Lobby)
     // If we are in a room, Home tab becomes the Game View
-    const [restoreSettingsOnLobbyReturn, setRestoreSettingsOnLobbyReturn] = useState(false);
 
     // If we are in a room, Home tab becomes the Game View
     if (isInRoom) {
@@ -600,23 +598,6 @@ function App() {
 
       {/* MODAL rendered LAST to ensure it is on top of everything (z-index 10005 vs 9999) */}
       {renderModal()}
-
-      {/* DEBUG OVERLAY - REMOVE AFTER FIX */
-        <div style={{
-          position: 'fixed',
-          bottom: '10px',
-          left: '10px',
-          background: 'rgba(255, 0, 0, 0.8)',
-          color: 'white',
-          zIndex: 99999,
-          padding: '10px',
-          fontSize: '12px',
-          pointerEvents: 'none'
-        }}>
-          <p><strong>Tab:</strong> {activeTab}</p>
-          <p><strong>Matches:</strong> {savedMatches ? savedMatches.length : 'null'}</p>
-          <p><strong>InRoom:</strong> {isInRoom ? 'Yes' : 'No'}</p>
-        </div>}
 
       {/* Animated Content Wrapper */}
       {renderAnimatedContent()}
