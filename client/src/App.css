@@ -2537,18 +2537,42 @@ select:focus {
 /* --- FIXED LIBRARY TABS --- */
 .library-tabs {
   display: flex;
-  flex-wrap: wrap;
-  /* Allow wrapping on small screens */
-  justify-content: center;
+  flex-wrap: nowrap;
+  /* Prevent wrapping, force scroll */
+  overflow-x: auto;
+  /* Horizontal scroll */
+  justify-content: flex-start;
+  /* Align start to allow scroll access */
   gap: var(--space-sm);
   margin-bottom: var(--space-md);
-  padding: 0 var(--space-sm);
+  padding: 10px var(--space-sm);
+  /* Add vertical padding for active state shift */
+  -webkit-overflow-scrolling: touch;
+  /* Smooth scroll on iOS */
+  scrollbar-width: none;
+  /* Firefox */
 }
 
+/* Hide scrollbar for cleaner look */
+.library-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+
 .library-tabs .tab-btn {
-  /* Ensure large enough touch target but flexible width */
-  flex: 1 1 auto;
+  flex: 0 0 auto;
+  /* Do not shrink or grow */
   text-align: center;
-  min-width: 100px;
-  margin-bottom: 5px;
+  white-space: nowrap;
+  /* Prevent text wrapping inside button */
+  min-width: auto;
+  /* Let content define width */
+  padding: 8px 20px;
+}
+
+@media (min-width: 768px) {
+  .library-tabs {
+    justify-content: center;
+    /* Center on desktop if they fit */
+  }
 }
