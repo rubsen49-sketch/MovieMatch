@@ -2230,9 +2230,10 @@ select:focus {
 .match-overlay {
   position: fixed;
   inset: 0;
-  z-index: 2000;
-  /* Top priority */
-  background: rgba(0, 0, 0, 0.9);
+  z-index: 9999;
+  /* Boost z-index to max */
+  background: rgba(0, 0, 0, 0.95);
+  /* Opaque enough */
   backdrop-filter: blur(15px);
   display: flex;
   flex-direction: column;

@@ -138,7 +138,7 @@ function App() {
     isInRoom,
     isHost,
     gameStarted, setGameStarted,
-    match, setMatch,
+    match, setMatch, // [DEBUG] Check match object here?
     playerCount,
     players,
     settings,
@@ -401,6 +401,7 @@ function App() {
   const renderContent = () => {
     // 1. MATCH OVERLAY (Top Priority - Global)
     if (match) {
+      console.log("Rendering Match Overlay with:", match); // [DEBUG]
       return (
         <div className="match-overlay">
           <h1 className="match-title">IT'S A MATCH!</h1>
