@@ -41,7 +41,8 @@ const getUserId = () => {
 function App() {
   const [movies, setMovies] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [page, setPage] = useState(1);
+  // [AMÉLIORATION] Start on a random page (1-15) to vary content ("Never the same")
+  const [page, setPage] = useState(() => Math.floor(Math.random() * 15) + 1);
   const [view, setView] = useState("menu");
   const [showGenreSelector, setShowGenreSelector] = useState(false);
   const [providersDisplay, setProvidersDisplay] = useState([]);
@@ -254,7 +255,16 @@ function App() {
       console.error("API Key missing");
       return;
     }
-    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=popularity.desc&page=${page}`;
+
+    // [MODES DE JEU]
+    // 1. Populaire (Trending): sort_by=popularity.desc
+    // 2. Classique (Top All Time): sort_by=vote_count.desc
+    const sortParam = (settings.discoveryMode === 'classic') ? 'vote_count.desc' : 'popularity.desc';
+
+    let endpoint = `https://api.themoviedb.org/3/discover/movie?api_key=${API_KEY}&language=fr-FR&sort_by=${sortParam}&page=${page}`;
+
+    // Debug
+    console.log(`Fetching mode: ${settings.discoveryMode || 'default'} (Sort: ${sortParam})`);
 
     if (selectedGenre.length > 0) {
       endpoint += `&with_genres=${selectedGenre.join(',')}`;
@@ -265,7 +275,14 @@ function App() {
     if (yearRange.min) endpoint += `&primary_release_date.gte=${yearRange.min}-01-01`;
     if (yearRange.max) endpoint += `&primary_release_date.lte=${yearRange.max}-12-31`;
 
-    if (minRating > 0) endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+    // Ensure they are "known" (300+ votes)
+    // Note: vote_count.desc implicitly handles this, but if user filters by year/genre, this helps maintain quality
+    if (minRating > 0) {
+      endpoint += `&vote_average.gte=${minRating}&vote_count.gte=300`;
+    } else {
+      // Default quality filter even without rating
+      endpoint += `&vote_count.gte=300`;
+    }
 
     if (selectedProviders.length > 0) {
       endpoint += `&with_watch_providers=${selectedProviders.join('|')}`;
@@ -443,9 +460,9 @@ function App() {
 
     // 3. HOME TAB (Welcome OR Game/Lobby)
     // If we are in a room, Home tab becomes the Game View
-  const [restoreSettingsOnLobbyReturn, setRestoreSettingsOnLobbyReturn] = useState(false);
+    const [restoreSettingsOnLobbyReturn, setRestoreSettingsOnLobbyReturn] = useState(false);
 
-  // If we are in a room, Home tab becomes the Game View
+    // If we are in a room, Home tab becomes the Game View
     if (isInRoom) {
       if (!gameStarted) {
         return showGenreSelector ? (

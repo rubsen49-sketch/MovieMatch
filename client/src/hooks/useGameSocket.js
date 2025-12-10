@@ -26,6 +26,7 @@ export const useGameSocket = (user, onMatchFound) => {
 	const [minRating, setMinRating] = useState(0);
 	const [selectedProviders, setSelectedProviders] = useState([]);
 	const [voteMode, setVoteMode] = useState('majority');
+	const [discoveryMode, setDiscoveryMode] = useState('popular'); // [NEW] discovery mode
 
 	// We use a ref for the user to access distinct current value in callbacks if needed, 
 	// though we mostly rely on passed arguments or effects.
@@ -45,7 +46,9 @@ export const useGameSocket = (user, onMatchFound) => {
 			if (settings.genre !== undefined) setSelectedGenre(settings.genre);
 			if (settings.rating !== undefined) setMinRating(settings.rating);
 			if (settings.providers !== undefined) setSelectedProviders(settings.providers);
+			if (settings.providers !== undefined) setSelectedProviders(settings.providers);
 			if (settings.voteMode !== undefined) setVoteMode(settings.voteMode);
+			if (settings.discoveryMode !== undefined) setDiscoveryMode(settings.discoveryMode);
 		});
 
 		socket.on('invitation_received', ({ roomCode, inviterName }) => {
@@ -257,7 +260,9 @@ export const useGameSocket = (user, onMatchFound) => {
 			genre: selectedGenre,
 			rating: minRating,
 			providers: selectedProviders,
+			providers: selectedProviders,
 			voteMode: voteMode,
+			discoveryMode: discoveryMode,
 			...updates
 		};
 
@@ -266,7 +271,9 @@ export const useGameSocket = (user, onMatchFound) => {
 		if (updates.genre !== undefined) setSelectedGenre(updates.genre);
 		if (updates.rating !== undefined) setMinRating(updates.rating);
 		if (updates.providers !== undefined) setSelectedProviders(updates.providers);
+		if (updates.providers !== undefined) setSelectedProviders(updates.providers);
 		if (updates.voteMode !== undefined) setVoteMode(updates.voteMode);
+		if (updates.discoveryMode !== undefined) setDiscoveryMode(updates.discoveryMode);
 
 		socket.emit("update_settings", {
 			room: room,
@@ -310,7 +317,11 @@ export const useGameSocket = (user, onMatchFound) => {
 			genre: selectedGenre,
 			rating: minRating,
 			providers: selectedProviders,
-			voteMode: voteMode
+			providers: selectedProviders,
+			voteMode: voteMode,
+			rating: minRating,
+			genre: selectedGenre,
+			discoveryMode: discoveryMode
 		},
 		updateSettings: syncSettings,
 		createRoom,

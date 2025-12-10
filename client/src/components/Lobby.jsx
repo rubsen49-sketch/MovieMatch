@@ -37,6 +37,7 @@ const Lobby = ({
 
 	const selectedProviders = settings.providers || [];
 	const voteMode = settings.voteMode || 'majority';
+	const discoveryMode = settings.discoveryMode || 'popular';
 	const minRating = settings.rating || 0;
 	const genreCount = (settings.genre || []).length;
 
@@ -59,6 +60,24 @@ const Lobby = ({
 						<img src={p.logo} alt={p.name} />
 					</div>
 				))}
+			</div>
+
+			<label className="settings-label">Mode de découverte</label>
+			<div className="vote-mode-selector">
+				<button
+					className={discoveryMode === 'popular' ? 'mode-active' : ''}
+					onClick={() => isHost && handleSettingChange('discoveryMode', 'popular')}
+					disabled={!isHost}
+				>
+					🔥 Populaire
+				</button>
+				<button
+					className={discoveryMode === 'classic' ? 'mode-active' : ''}
+					onClick={() => isHost && handleSettingChange('discoveryMode', 'classic')}
+					disabled={!isHost}
+				>
+					🏆 Classiques
+				</button>
 			</div>
 
 			<label className="settings-label">Mode de vote</label>

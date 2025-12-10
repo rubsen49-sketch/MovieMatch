@@ -8,7 +8,8 @@ const createRoom = (roomId, hostId) => {
 		likes: {},
 		settings: {
 			providers: [],
-			voteMode: 'majority' // 'majority' or 'unanimity'
+			voteMode: 'majority',
+			discoveryMode: 'popular'
 		},
 		hostId: hostId
 	};
