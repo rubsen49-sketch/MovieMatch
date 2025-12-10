@@ -1607,7 +1607,37 @@ select:focus {
   color: white;
 }
 
+/* --- MAIN LAYOUT STRUCTURE --- */
+.main-layout {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.content-area {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  /* Important for inner scrollable areas */
+  background: #151515;
+}
+
+@media (max-width: 768px) {
+  .main-layout {
+    flex-direction: column;
+  }
+
+  .content-area {
+    padding-top: 60px;
+    /* Space for mobile header */
+  }
+}
+
 /* --- MOBILE HEADER OVERLAP FIX --- */
+/* (Previous styles continue below...) */
 @media (max-width: 768px) {
   .library-header {
     padding-top: 70px;

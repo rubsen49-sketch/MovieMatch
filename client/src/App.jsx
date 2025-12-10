@@ -601,6 +601,23 @@ function App() {
       {/* MODAL rendered LAST to ensure it is on top of everything (z-index 10005 vs 9999) */}
       {renderModal()}
 
+      {/* DEBUG OVERLAY - REMOVE AFTER FIX */
+        <div style={{
+          position: 'fixed',
+          bottom: '10px',
+          left: '10px',
+          background: 'rgba(255, 0, 0, 0.8)',
+          color: 'white',
+          zIndex: 99999,
+          padding: '10px',
+          fontSize: '12px',
+          pointerEvents: 'none'
+        }}>
+          <p><strong>Tab:</strong> {activeTab}</p>
+          <p><strong>Matches:</strong> {savedMatches ? savedMatches.length : 'null'}</p>
+          <p><strong>InRoom:</strong> {isInRoom ? 'Yes' : 'No'}</p>
+        </div>}
+
       {/* Animated Content Wrapper */}
       {renderAnimatedContent()}
     </MainLayout>
