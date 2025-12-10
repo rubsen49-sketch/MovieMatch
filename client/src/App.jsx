@@ -443,6 +443,9 @@ function App() {
 
     // 3. HOME TAB (Welcome OR Game/Lobby)
     // If we are in a room, Home tab becomes the Game View
+  const [restoreSettingsOnLobbyReturn, setRestoreSettingsOnLobbyReturn] = useState(false);
+
+  // If we are in a room, Home tab becomes the Game View
     if (isInRoom) {
       if (!gameStarted) {
         return showGenreSelector ? (
@@ -470,6 +473,7 @@ function App() {
             updateSettings={updateSettings}
             startGame={startGame}
             leaveRoom={leaveRoom}
+            initialSettingsOpen={restoreSettingsOnLobbyReturn} // Pass restoration flag
             shareCode={async () => {
               if (navigator.share) {
                 await navigator.share({ title: 'MovieMatch', text: `Rejoins-moi ! Code : ${room}`, url: window.location.href });
@@ -478,7 +482,10 @@ function App() {
                 alert("Code copié !");
               }
             }}
-            onOpenGenreSelector={() => setShowGenreSelector(true)}
+            onOpenGenreSelector={(fromSettings = false) => {
+              setRestoreSettingsOnLobbyReturn(fromSettings);
+              setShowGenreSelector(true);
+            }}
           />
         );
       } else {

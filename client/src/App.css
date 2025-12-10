@@ -813,6 +813,9 @@ select:focus {
   .welcome-screen:has(.room-settings) {
     padding-top: 80px;
     padding-bottom: env(safe-area-inset-bottom);
+    padding-left: var(--space-lg);
+    /* Match Lobby padding */
+    padding-right: var(--space-lg);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -822,7 +825,8 @@ select:focus {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    padding: var(--space-md);
+    padding: var(--space-md) 0;
+    /* Remove side padding inside content */
     overflow-y: auto;
   }
 
@@ -836,10 +840,10 @@ select:focus {
   .welcome-screen>.unified-btn.validate {
     margin-top: auto;
     margin-bottom: var(--space-lg);
-    margin-left: var(--space-md);
-    margin-right: var(--space-md);
-    width: auto;
-    /* FIX: Prevent overflow (was 100% + margins) */
+    margin-left: 0;
+    margin-right: 0;
+    width: 100%;
+    /* Fill container width (minus padding) */
   }
 
   /* --- GENRE SELECTOR MOBILE LAYOUT --- */
@@ -850,6 +854,8 @@ select:focus {
     display: flex;
     flex-direction: column;
     padding-bottom: env(safe-area-inset-bottom);
+    padding-left: var(--space-lg);
+    padding-right: var(--space-lg);
   }
 
   /* Title centering */
@@ -870,9 +876,9 @@ select:focus {
     margin-top: auto !important;
     /* Override inline styles */
     margin-bottom: var(--space-lg) !important;
-    margin-left: var(--space-md) !important;
-    margin-right: var(--space-md) !important;
-    width: auto !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    width: 100% !important;
     /* Fix width */
     min-width: 0 !important;
     /* Override inline min-width */

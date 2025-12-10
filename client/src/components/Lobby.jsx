@@ -13,10 +13,11 @@ const Lobby = ({
 	onOpenGenreSelector,
 	players,
 	currentUser,
-	onAddFriend
+	onAddFriend,
+	initialSettingsOpen = false // [NEW] Prop to restore state
 }) => {
 	// Local state for mobile settings toggle
-	const [showHostSettingsMobile, setShowHostSettingsMobile] = useState(false);
+	const [showHostSettingsMobile, setShowHostSettingsMobile] = useState(initialSettingsOpen);
 
 	// Helper to handle specific setting updates
 	const handleSettingChange = (key, value) => {
@@ -82,14 +83,13 @@ const Lobby = ({
 			<div className="filters-row-vertical">
 				<button
 					className="unified-btn secondary"
-					onClick={isHost ? onOpenGenreSelector : null}
+					onClick={() => isHost && onOpenGenreSelector(true)}
 					style={{ marginBottom: '10px', opacity: isHost ? 1 : 0.7 }}
 				>
 					{genreCount > 0
 						? `Genres : ${genreCount} choisi(s)`
 						: "Genres : Tous"} {isHost && "✏️"}
 				</button>
-
 				<div className="rating-selector" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 					<span style={{ color: '#888' }}>Note Min:</span>
 					<select
@@ -108,6 +108,20 @@ const Lobby = ({
 			{!isHost && <div style={{ marginTop: 20, color: 'var(--text-sub)', fontStyle: 'italic', fontSize: '0.9rem' }}>Seul l'hôte peut modifier ces réglages.</div>}
 		</div>
 	);
+
+	// MOBILE HOST SETTINGS MODAL
+	if (isHost && showHostSettingsMobile) {
+		return (
+			<div className="welcome-screen">
+				<SettingsPanel />
+				<button className="unified-btn validate" style={{ marginTop: '20px' }} onClick={() => setShowHostSettingsMobile(false)}>
+					Valider et Retour
+				</button>
+			</div>
+		);
+	}
+
+
 
 	// MOBILE HOST SETTINGS MODAL
 	if (isHost && showHostSettingsMobile) {
