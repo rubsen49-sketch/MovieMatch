@@ -762,21 +762,44 @@ select:focus {
 /* --- MOBILE LOBBY ADJUSTMENTS --- */
 @media (max-width: 900px) {
   .lobby-container {
-    padding-top: 80px;
-    /* Clear transparency header overlap */
+    padding-top: 60px;
     height: 100vh;
     display: flex;
     flex-direction: column;
     padding-bottom: env(safe-area-inset-bottom);
+    overflow-y: auto;
   }
 
   .lobby-left {
     display: flex;
     flex-direction: column;
     flex: 1;
-    height: 100%;
-    padding: 0;
+    height: auto;
+    /* Changed from 100% to auto to allow flex to managing spacing */
+    padding: var(--space-md);
+    justify-content: flex-start;
   }
+
+  .room-code-box {
+    padding: var(--space-md);
+    margin-bottom: var(--space-md);
+  }
+
+  .code-display {
+    font-size: 2rem;
+  }
+
+  .player-list {
+    max-height: 180px !important;
+    /* Reduced height */
+    flex-grow: 0;
+  }
+
+  .lobby-actions {
+    margin-top: auto;
+    padding-bottom: 20px;
+  }
+
 
   .lobby-left h1 {
     text-align: center;
