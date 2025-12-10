@@ -36,15 +36,24 @@ export const useFriends = (currentUser) => {
 				if (rel.status === 'accepted') {
 					const isMeRequester = rel.user_id === currentUser.id;
 					const friendProfile = isMeRequester ? rel.friend : rel.user;
-					// Deduplicate based on ID
-					if (!uniqueFriends.has(friendProfile.id)) {
-						uniqueFriends.set(friendProfile.id, { ...friendProfile, friendship_id: rel.id });
+
+					// [FIX] Guard against deleted users (rel.friend or rel.user might be null)
+					if (friendProfile && friendProfile.id) {
+						if (!uniqueFriends.has(friendProfile.id)) {
+							uniqueFriends.set(friendProfile.id, { ...friendProfile, friendship_id: rel.id });
+						}
 					}
 				} else if (rel.status === 'pending') {
 					if (rel.friend_id === currentUser.id) {
-						incoming.push({ ...rel, other: rel.user });
+						// Incoming request: I am the friend_id, sender is user_id (rel.user)
+						if (rel.user) {
+							incoming.push({ ...rel, other: rel.user });
+						}
 					} else {
-						outgoing.push({ ...rel, other: rel.friend });
+						// Outgoing request: I am the user_id, target is friend_id (rel.friend)
+						if (rel.friend) {
+							outgoing.push({ ...rel, other: rel.friend });
+						}
 					}
 				}
 			});
