@@ -151,7 +151,7 @@ function App() {
     inviteFriend
   } = useGameSocket(user, onMatchFoundCB);
 
-  const { genre: selectedGenre, rating: minRating, providers: selectedProviders, voteMode } = settings;
+  const { genre: selectedGenre, rating: minRating, providers: selectedProviders, voteMode, discoveryMode } = settings;
 
   // NOTE: yearRange is currently local state or needs to be synced via settings? 
   // For simplicity V1: Local to the person fetching (Host drives the API calls mostly).
@@ -485,7 +485,8 @@ function App() {
               providers: selectedProviders,
               voteMode: voteMode,
               rating: minRating,
-              genre: selectedGenre
+              genre: selectedGenre,
+              discoveryMode: settings.discoveryMode // Direct access or destructured
             }}
             updateSettings={updateSettings}
             startGame={startGame}
