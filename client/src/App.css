@@ -838,6 +838,45 @@ select:focus {
     margin-bottom: var(--space-lg);
     margin-left: var(--space-md);
     margin-right: var(--space-md);
+    width: auto;
+    /* FIX: Prevent overflow (was 100% + margins) */
+  }
+
+  /* --- GENRE SELECTOR MOBILE LAYOUT --- */
+  /* Target welcome-screen containing filters (heuristic: has h2) */
+  .welcome-screen:has(.genre-grid-container) {
+    padding-top: 80px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Title centering */
+  .welcome-screen:has(.genre-grid-container) h2 {
+    text-align: center;
+    margin-bottom: var(--space-md);
+  }
+
+  /* Content area expansion */
+  .genre-grid-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-bottom: var(--space-md);
+  }
+
+  /* Valider button at bottom override */
+  .welcome-screen:has(.genre-grid-container) .unified-btn.validate {
+    margin-top: auto !important;
+    /* Override inline styles */
+    margin-bottom: var(--space-lg) !important;
+    margin-left: var(--space-md) !important;
+    margin-right: var(--space-md) !important;
+    width: auto !important;
+    /* Fix width */
+    min-width: 0 !important;
+    /* Override inline min-width */
+    display: flex !important;
   }
 }
 
