@@ -54,6 +54,9 @@ const SwipeDeck = ({
 						style={{ x, rotate, opacity }}
 						initial={{ scale: 0.8 }} animate={{ scale: 1 }}
 						key={movie.id} // Re-mount key for clean transition
+						onTap={() => setDetailsMovie(movie)} // [NEW] Tap to open details
+						whileTap={{ scale: 0.98 }}
+						cursor="pointer"
 					>
 						<div className="movie-poster-wrapper">
 							<img
@@ -68,6 +71,9 @@ const SwipeDeck = ({
 								<div className="movie-meta">
 									<span>{movie.release_date?.split('-')[0]}</span>
 									<span>★ {movie.vote_average?.toFixed(1)}</span>
+								</div>
+								<div style={{ fontSize: '0.8rem', marginTop: 5, color: 'var(--gold)' }}>
+									ℹ️ Toucher pour plus d'infos
 								</div>
 							</div>
 						</div>

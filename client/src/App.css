@@ -1407,6 +1407,14 @@ select:focus {
   color: white;
 }
 
+/* FIX: Mobile Header Overlap */
+@media (max-width: 768px) {
+  .library-header {
+    padding-top: 70px;
+    /* Push content down to avoid hamburger button */
+  }
+}
+
 .bulk-btn {
   padding: 8px 20px;
   border: none;
