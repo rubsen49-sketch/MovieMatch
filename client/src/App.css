@@ -839,7 +839,8 @@ select:focus {
   /* Target the Validate button which is a direct child of welcome-screen in Lobby.jsx */
   .welcome-screen>.unified-btn.validate {
     margin-top: auto;
-    margin-bottom: var(--space-lg);
+    margin-bottom: calc(var(--space-lg) + 56px);
+    /* Align with "Lancer" (above Quitter) */
     margin-left: 0;
     margin-right: 0;
     width: 100%;
@@ -875,7 +876,8 @@ select:focus {
   .welcome-screen:has(.genre-grid-container) .unified-btn.validate {
     margin-top: auto !important;
     /* Override inline styles */
-    margin-bottom: var(--space-lg) !important;
+    margin-bottom: calc(var(--space-lg) + 56px) !important;
+    /* Align with "Lancer" */
     margin-left: 0 !important;
     margin-right: 0 !important;
     width: 100% !important;
