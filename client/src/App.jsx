@@ -574,7 +574,7 @@ function App() {
         </motion.div>
       )}
 
-      {renderModal()}
+
 
       {/* MATCH OVERLAY MOVED TO ROOT to avoid transform stacking context issues */}
       {match && (
@@ -597,6 +597,9 @@ function App() {
         </div>
       )}
 
+
+      {/* MODAL rendered LAST to ensure it is on top of everything (z-index 10005 vs 9999) */}
+      {renderModal()}
 
       {/* Animated Content Wrapper */}
       {renderAnimatedContent()}
