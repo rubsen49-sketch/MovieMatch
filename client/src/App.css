@@ -78,7 +78,7 @@
   padding: 5px;
 }
 
-/* --- MOBILE HEADER (Visible only on mobile) --- */
+/* --- MOBILE HEADER (Transparent Overlay) --- */
 .mobile-header {
   display: none;
   position: absolute;
@@ -88,16 +88,16 @@
   height: 60px;
   padding: 0 var(--space-md);
   align-items: center;
-  gap: var(--space-md);
   z-index: 150;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+  /* Removed background to show hero image */
+  background: transparent;
   pointer-events: none;
-  /* Let clicks pass through except button */
 }
 
 .hamburger-btn {
   pointer-events: auto;
   background: rgba(0, 0, 0, 0.5);
+  /* Keep button visible */
   backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
@@ -112,14 +112,8 @@
 }
 
 .mobile-logo-text {
-  font-weight: 800;
-  font-size: 1.2rem;
-  text-transform: uppercase;
-  color: var(--primary);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-  opacity: 1;
-  margin-left: 15px;
-  /* Visible on mobile now */
+  display: none;
+  /* User requested to remove title from bar */
 }
 
 /* SIDEBAR OVERLAY */
@@ -267,8 +261,8 @@
 
   /* Adjust Content area padding/margin if needed */
   .content-area {
-    padding-top: 60px;
-    /* Space for mobile header */
+    padding-top: 0;
+    /* [FIX] Removed padding so background goes to top */
   }
 }
 
@@ -403,6 +397,7 @@
 }
 
 /* BUTTONS OVERRIDES FOR HERO */
+/* BUTTONS OVERRIDES FOR HERO */
 .hero-btn {
   padding: var(--space-md) var(--space-xl);
   font-size: 1.1rem;
@@ -415,6 +410,37 @@
 
 .hero-btn:hover {
   transform: translateY(-2px);
+}
+
+/* --- MOBILE HERO ADJUSTMENTS --- */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: var(--space-xl) var(--space-md);
+    /* Reduce side padding */
+    padding-top: 100px;
+    /* Ensure title clears the top edge since header is transparent */
+    justify-content: center;
+    /* Center content vertically on mobile instead of bottom */
+    min-height: 500px;
+    /* Ensure enough height */
+  }
+
+  .hero-title {
+    font-size: 3rem;
+    /* Smaller title on mobile */
+    line-height: 1;
+  }
+
+  .hero-actions {
+    flex-direction: column;
+    /* Stack buttons on mobile */
+    gap: var(--space-sm);
+  }
+
+  .hero-btn {
+    width: 100%;
+    /* Full width buttons */
+  }
 }
 
 /* DASHBOARD CONTENT GRID */
@@ -1292,54 +1318,108 @@ select:focus {
   border-radius: var(--radius-sm);
 }
 
-.view-btn {
-  width: 35px;
-  height: 35px;
-  background: transparent;
-  border: none;
-  color: #666;
-  font-size: 1.2rem;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.view-btn.active {
-  background: var(--primary);
-  color: white;
-}
+/* --- LIBRARY MATCHES REFACTOR --- */
 
 .matches-grid.view-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--space-sm);
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  /* Optimized for mobile (2 cols) */
+  gap: var(--space-md);
+  padding-bottom: 100px;
 }
 
 @media (min-width: 768px) {
   .matches-grid.view-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    /* Larger on desktop */
   }
 }
 
 .matches-grid.view-list {
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-sm);
+  padding-bottom: 100px;
 }
 
-.bulk-btn {
-  padding: var(--space-xs) var(--space-md);
-  border: none;
-  border-radius: var(--radius-full);
-  font-weight: var(--fw-bold);
-  font-size: 0.85rem;
+/* Tabs as Pills */
+.library-tabs {
+  display: flex;
+  padding: var(--space-md);
+  gap: var(--space-sm);
+  background: transparent;
+  overflow-x: auto;
+  /* Scrollable on small screens */
+  margin-bottom: var(--space-sm);
+}
+
+.tab-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-sub);
+  padding: 8px 16px;
+  border-radius: 50px;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.tab-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.tab-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(229, 9, 20, 0.4);
+}
+
+/* View Toggles (Segmented Control look) */
+.view-toggles {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.view-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #666;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.view-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.bulk-btn {
+  padding: 8px 20px;
+  border: none;
+  border-radius: 50px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
 .bulk-btn.move {
   background: var(--gold);
-  color: #000;
+  color: black;
 }
 
 .bulk-btn.delete {
@@ -1614,4 +1694,84 @@ select:focus {
   border-color: var(--primary);
   color: var(--primary);
   transform: translateY(-2px);
+}
+
+/* --- MINI CARD (MatchItem) --- */
+.mini-card {
+  position: relative;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  aspect-ratio: 2/3;
+  /* Keep poster ratio */
+}
+
+.mini-card.clickable {
+  cursor: pointer;
+}
+
+.mini-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  border-color: var(--primary);
+}
+
+.mini-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mini-card h3 {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  padding: 10px;
+  margin: 0;
+  font-size: 0.9rem;
+  color: white;
+  text-shadow: 0 1px 2px black;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.mini-card:hover h3 {
+  opacity: 1;
+}
+
+/* Selected state */
+.item-selected .mini-card {
+  border: 2px solid var(--primary);
+  transform: scale(0.95);
+}
+
+.selection-overlay {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.checkbox-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 0.8rem;
+}
+
+.selection-overlay.checked .checkbox-circle {
+  background: var(--primary);
+  border-color: var(--primary);
 }
