@@ -25,6 +25,18 @@
   }
 }
 
+@keyframes scaleIn {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .fade-in {
   animation: fadeIn 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
@@ -2226,15 +2238,13 @@ select:focus {
   border-color: #e74c3c;
 }
 
-/* --- MATCH OVERLAY (MISSING) --- */
+/* --- MATCH OVERLAY --- */
 .match-overlay {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  /* Boost z-index to max */
   background: rgba(0, 0, 0, 0.95);
-  /* Opaque enough */
-  backdrop-filter: blur(15px);
+  backdrop-filter: blur(20px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2245,53 +2255,55 @@ select:focus {
 }
 
 .match-title {
-  font-size: 3rem;
+  font-size: 3.5rem;
   font-weight: 900;
   color: var(--gold);
   text-transform: uppercase;
   margin-bottom: var(--space-lg);
-  text-shadow: 0 0 20px rgba(255, 179, 0, 0.5);
-  animation: scaleIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  text-shadow: 0 0 30px rgba(255, 179, 0, 0.6);
+  animation: scaleIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .match-poster {
-  width: 250px;
+  width: 280px;
   border-radius: var(--radius-lg);
-  box-shadow: 0 0 40px rgba(255, 179, 0, 0.3);
+  box-shadow: 0 0 50px rgba(255, 179, 0, 0.4);
   margin-bottom: var(--space-md);
-  border: 2px solid var(--gold);
-  transition: transform 0.3s;
+  border: 3px solid var(--gold);
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
   cursor: pointer;
 }
 
 .match-poster:hover {
-  transform: scale(1.05);
+  transform: scale(1.05) rotate(2deg);
+  box-shadow: 0 0 70px rgba(255, 179, 0, 0.6);
 }
 
 .match-hint-click {
-  color: var(--text-sub);
-  font-size: 0.9rem;
+  color: #fff;
+  font-size: 1rem;
   margin-bottom: var(--space-lg);
-  animation: pulse 2s infinite;
+  opacity: 0.8;
+  animation: pulse-glow 2s infinite;
 }
 
 .match-overlay h2 {
-  font-size: 1.5rem;
+  font-size: 1.8rem;
+  font-weight: bold;
   color: white;
   margin-bottom: var(--space-xl);
   max-width: 80%;
+  text-shadow: 0 2px 10px black;
 }
 
 @media (max-width: 768px) {
   .match-title {
     font-size: 2.5rem;
-    margin-top: -50px;
-    /* Pull up slightly */
+    margin-top: -20px;
   }
 
   .match-poster {
     width: 200px;
-    /* Smaller on mobile */
     max-height: 45vh;
     object-fit: cover;
   }
