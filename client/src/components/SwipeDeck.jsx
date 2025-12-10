@@ -15,9 +15,18 @@ const SwipeDeck = ({
 	const rotate = useTransform(x, [-200, 200], [-30, 30]);
 	const opacity = useTransform(x, [-150, 0, 150], [0.5, 1, 0.5]);
 
+	const [isDragging, setIsDragging] = React.useState(false);
+
 	const handleDragEnd = (event, info) => {
+		setTimeout(() => setIsDragging(false), 50); // Small delay to prevent tap immediately after drag
 		if (info.offset.x > 100) handleSwipe("right");
 		else if (info.offset.x < -100) handleSwipe("left");
+	};
+
+	const handleTap = () => {
+		if (!isDragging) {
+			setDetailsMovie(movie);
+		}
 	};
 
 	// Keyboard Support
@@ -50,11 +59,14 @@ const SwipeDeck = ({
 				<div className="swipe-card-side">
 					<motion.div
 						className="movie-card"
-						drag="x" dragConstraints={{ left: 0, right: 0 }} onDragEnd={handleDragEnd}
+						drag="x"
+						dragConstraints={{ left: 0, right: 0 }}
+						onDragStart={() => setIsDragging(true)}
+						onDragEnd={handleDragEnd}
 						style={{ x, rotate, opacity }}
 						initial={{ scale: 0.8 }} animate={{ scale: 1 }}
 						key={movie.id} // Re-mount key for clean transition
-						onTap={() => setDetailsMovie(movie)} // [NEW] Tap to open details
+						onTap={handleTap} // [NEW] Safe tap handler
 						whileTap={{ scale: 0.98 }}
 						cursor="pointer"
 					>
@@ -120,8 +132,9 @@ const SwipeDeck = ({
 
 				{/* MOBILE ACTIONS (Floating at bottom, visible only mobile via CSS) */}
 				<div className="actions desktop-hidden">
-					<button className="btn-circle btn-undo btn-undo-mobile" onClick={handleUndo}>↩️</button>
+					{/* ORDER: Left (Pass) | Undo (Back) | Right (Like) */}
 					<button className="btn-circle btn-pass" onClick={() => handleSwipe("left")}>✖️</button>
+					<button className="btn-circle btn-undo btn-undo-mobile" onClick={handleUndo}>↩️</button>
 					<button className="btn-circle btn-like" onClick={() => handleSwipe("right")}>❤️</button>
 				</div>
 			</div>

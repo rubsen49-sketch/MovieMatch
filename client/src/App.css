@@ -1595,11 +1595,109 @@ select:focus {
   color: white;
 }
 
-/* FIX: Mobile Header Overlap */
+/* --- MOBILE HEADER OVERLAP FIX --- */
 @media (max-width: 768px) {
   .library-header {
     padding-top: 70px;
     /* Push content down to avoid hamburger button */
+  }
+}
+
+/* --- MOBILE GAME VIEW (SWIPE) OVERHAUL --- */
+@media (max-width: 1024px) {
+
+  /* Center the deck container */
+  .deck-container {
+    height: 100vh;
+    padding-top: 60px;
+    /* Clear header */
+    padding-bottom: 120px;
+    /* Space for buttons */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    /* Vertical Center */
+    align-items: center;
+    /* Horizontal Center */
+  }
+
+  /* Optimize Card Size */
+  .card-container {
+    width: 100%;
+    max-width: 340px;
+    /* Slightly smaller for better fit */
+    height: auto;
+    aspect-ratio: 2/3;
+    max-height: 65vh;
+    /* Ensure it fits with buttons */
+    margin: 0 auto;
+    position: relative;
+    /* Reset fixed positioning if any */
+  }
+
+  /* 3-Button Layout at Bottom */
+  .actions.desktop-hidden {
+    position: fixed;
+    bottom: var(--space-lg);
+    left: 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: var(--space-lg);
+    /* Consistent spacing */
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Button Styling Refresh */
+  .btn-circle {
+    width: 60px;
+    height: 60px;
+    /* Smaller than 72px for better proportion */
+    font-size: 1.5rem;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Undo Button Specifics */
+  .btn-undo-mobile {
+    width: 50px;
+    height: 50px;
+    font-size: 1.2rem;
+    background: rgba(255, 255, 255, 0.1);
+    order: 2;
+    /* Ensure middle position if needed, but DOM order is safer */
+  }
+
+  /* Pass/Like Specifics */
+  .btn-pass {
+    order: 1;
+    border-color: rgba(255, 71, 87, 0.3);
+  }
+
+  .btn-like {
+    order: 3;
+    border-color: rgba(255, 179, 0, 0.3);
+  }
+
+  /* Hide Desktop Split Layout Elements */
+  .swipe-split-layout {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .swipe-card-side {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
   }
 }
 
@@ -1610,7 +1708,6 @@ select:focus {
   font-weight: bold;
   font-size: 0.9rem;
   cursor: pointer;
-  transition: transform 0.2s;
 }
 
 .bulk-btn.move {
