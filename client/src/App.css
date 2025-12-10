@@ -750,7 +750,8 @@ select:focus {
 /* --- MOBILE LOBBY ADJUSTMENTS --- */
 @media (max-width: 900px) {
   .lobby-container {
-    padding-top: 80px; /* Clear transparency header overlap */
+    padding-top: 80px;
+    /* Clear transparency header overlap */
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -776,6 +777,7 @@ select:focus {
     padding: var(--space-md);
     margin-bottom: var(--space-sm);
   }
+
   .code-display {
     font-size: 2.5rem;
   }
@@ -786,7 +788,8 @@ select:focus {
     max-height: none !important;
     overflow-y: auto;
     margin: var(--space-md) 0;
-    min-height: 0; /* flexbox scrolling fix */
+    min-height: 0;
+    /* flexbox scrolling fix */
   }
 
   /* Push actions to bottom */
@@ -800,6 +803,41 @@ select:focus {
 
   .lobby-right {
     display: none;
+  }
+}
+
+/* --- MOBILE SETTINGS SCREEN --- */
+@media (max-width: 900px) {
+
+  /* When SettingsPanel is rendered inside welcome-screen on mobile */
+  .welcome-screen:has(.room-settings) {
+    padding-top: 80px;
+    padding-bottom: env(safe-area-inset-bottom);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .room-settings {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-md);
+    overflow-y: auto;
+  }
+
+  .settings-title {
+    text-align: center;
+    font-size: 1.5rem;
+    margin-bottom: var(--space-lg);
+  }
+
+  /* Target the Validate button which is a direct child of welcome-screen in Lobby.jsx */
+  .welcome-screen>.unified-btn.validate {
+    margin-top: auto;
+    margin-bottom: var(--space-lg);
+    margin-left: var(--space-md);
+    margin-right: var(--space-md);
   }
 }
 
