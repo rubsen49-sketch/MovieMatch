@@ -260,7 +260,6 @@ export const useGameSocket = (user, onMatchFound) => {
 			genre: selectedGenre,
 			rating: minRating,
 			providers: selectedProviders,
-			providers: selectedProviders,
 			voteMode: voteMode,
 			discoveryMode: discoveryMode,
 			...updates
@@ -271,7 +270,6 @@ export const useGameSocket = (user, onMatchFound) => {
 		if (updates.genre !== undefined) setSelectedGenre(updates.genre);
 		if (updates.rating !== undefined) setMinRating(updates.rating);
 		if (updates.providers !== undefined) setSelectedProviders(updates.providers);
-		if (updates.providers !== undefined) setSelectedProviders(updates.providers);
 		if (updates.voteMode !== undefined) setVoteMode(updates.voteMode);
 		if (updates.discoveryMode !== undefined) setDiscoveryMode(updates.discoveryMode);
 
@@ -279,7 +277,7 @@ export const useGameSocket = (user, onMatchFound) => {
 			room: room,
 			settings: newSettings
 		});
-	}, [room, selectedGenre, minRating, selectedProviders, voteMode]);
+	}, [room, selectedGenre, minRating, selectedProviders, voteMode, discoveryMode]);
 
 	const swipe = useCallback((direction, movie, userId) => {
 		if (direction === "right") {
@@ -317,10 +315,7 @@ export const useGameSocket = (user, onMatchFound) => {
 			genre: selectedGenre,
 			rating: minRating,
 			providers: selectedProviders,
-			providers: selectedProviders,
 			voteMode: voteMode,
-			rating: minRating,
-			genre: selectedGenre,
 			discoveryMode: discoveryMode
 		},
 		updateSettings: syncSettings,
