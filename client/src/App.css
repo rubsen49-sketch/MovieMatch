@@ -2533,3 +2533,22 @@ select:focus {
   background: white;
   color: black;
 }
+
+/* --- FIXED LIBRARY TABS --- */
+.library-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  /* Allow wrapping on small screens */
+  justify-content: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-md);
+  padding: 0 var(--space-sm);
+}
+
+.library-tabs .tab-btn {
+  /* Ensure large enough touch target but flexible width */
+  flex: 1 1 auto;
+  text-align: center;
+  min-width: 100px;
+  margin-bottom: 5px;
+}

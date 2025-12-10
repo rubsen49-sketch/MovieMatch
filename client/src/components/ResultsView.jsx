@@ -6,7 +6,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 	const [activeTab, setActiveTab] = useState('to_watch');
 	const [isSelectionMode, setIsSelectionMode] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
-	const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+
 
 	// Filter logic: handle both new objects and old IDs (fallback)
 	const getFilteredMatches = () => {
@@ -47,22 +47,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 					<span>←</span> Retour
 				</button>
 
-				<div className="view-toggles">
-					<button
-						className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-						onClick={() => setViewMode('grid')}
-						title="Grille"
-					>
-						⊞
-					</button>
-					<button
-						className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-						onClick={() => setViewMode('list')}
-						title="Liste"
-					>
-						☰
-					</button>
-				</div>
+
 
 				<button
 					className={`unified-btn ${isSelectionMode ? 'primary' : 'secondary'}`}
@@ -104,7 +89,7 @@ const ResultsView = ({ savedMatches, onClose, resetMyMatches, onDetails, onUpdat
 					<SharedListsView currentUser={currentUser} savedMatches={savedMatches} />
 				</div>
 			) : (
-				<div className={`matches-grid ${viewMode === 'list' ? 'view-list' : 'view-grid'}`}>
+				<div className="matches-grid view-grid">
 					{matchesToShow.map(item => {
 						const movieId = typeof item === 'number' ? item : item.id;
 						const isSelected = selectedIds.includes(movieId);
