@@ -214,7 +214,9 @@ const Lobby = ({
 							<p className="pulse">En attente de l'hôte...</p>
 						</div>
 					)}
-					<button className="unified-btn secondary" onClick={leaveRoom} style={{ background: 'transparent', border: 'none', color: '#666' }}>Quitter</button>
+					<button className="btn-utility" onClick={leaveRoom} style={{ marginTop: '10px' }}>
+						<span>🚪</span> Quitter
+					</button>
 				</div>
 			</div>
 
